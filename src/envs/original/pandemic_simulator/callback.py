@@ -1,5 +1,4 @@
 from stable_baselines3.common.callbacks import BaseCallback
-from pandemic_simulator.environment.interfaces import sorted_infection_summary
 
 import os
 import wandb

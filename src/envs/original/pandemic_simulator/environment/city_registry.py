@@ -5,9 +5,9 @@ from typing import Dict, List, Optional, cast, Set, Type, Mapping, Tuple, Union
 from cachetools import cached
 
 from .interfaces import LocationID, Location, PersonID, Person, Registry, RegistrationError, InfectionSummary, \
-    IndividualInfectionState, BusinessLocationState, PandemicTestResult, LocationSummary, SimTimeTuple, SimTime, \
+    BusinessLocationState, PandemicTestResult, LocationSummary, SimTimeTuple, SimTime, \
     LocationState, get_infection_summary
-from pandemic_simulator.environment.interfaces.location_base_business import BusinessBaseLocation
+from src.envs.original.pandemic_simulator.environment.interfaces.location_base_business import BusinessBaseLocation
 from .location.cemetery import Cemetery
 
 __all__ = ['CityRegistry']

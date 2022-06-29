@@ -8,7 +8,7 @@ from typing import Sequence, Set, Tuple, Any
 import h5py as h5
 import numpy as np
 
-from pandemic_simulator.environment import PandemicObservation
+from src.envs.original.pandemic_simulator.environment import PandemicObservation
 from .interfaces import ExperimentDataLoader, ExperimentResult, StageSchedule
 from ..environment import PandemicSimOpts
 

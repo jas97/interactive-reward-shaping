@@ -1,4 +1,3 @@
-import gym
 import highway_env
 import numpy as np
 
@@ -11,8 +10,9 @@ class HighwayEnv(highway_env):
         self.shaping = shaping
         self.time_window = time_window
 
-        self.past = []
+        self.episode = []
 
+        #TODO: change parameters for inventory env
         self.lows = np.zeros((25, 0))
         self.highs = np.ones((25, 0))
 
@@ -21,13 +21,14 @@ class HighwayEnv(highway_env):
 
         self.state, rew, done, info = super.step(action)
 
-        aug_rew = self.augment_reward(action, self.state)
+        aug_rew = self.augment_reward(action, self.state.flatten())
 
         info['true_rew'] = rew
 
         return self.state, aug_rew, done, info
 
     def reset(self):
+        self.episode = []
         self.state = super().reset()
         return self.state
 

@@ -1,15 +1,8 @@
-from tqdm import trange
-
-import torch
-
-import time
-import numpy as np
-
-import pandemic_simulator as ps
-from pandemic_simulator.environment.reward import RewardFunction, SumReward, RewardFunctionFactory, RewardFunctionType
-from pandemic_simulator.environment.interfaces import InfectionSummary
-from pandemic_simulator.callback import WandbCallback
-from pandemic_simulator.environment.simulator_opts import PandemicSimOpts
+from src.envs.original import pandemic_simulator as ps
+from src.envs.original.pandemic_simulator.environment.reward import SumReward, RewardFunctionFactory, RewardFunctionType
+from src.envs.original.pandemic_simulator.environment.interfaces import InfectionSummary
+from src.envs.original.pandemic_simulator.callback import WandbCallback
+from src.envs.original.pandemic_simulator.environment.simulator_opts import PandemicSimOpts
 import sys
 import wandb
 
@@ -181,7 +174,7 @@ def main():
         wandb.init(
             project='PROJECT',
             group="covid",
-            dir='../logs/wandb',
+            dir='../../logs/wandb',
             entity='jas97',
             config=None,
             sync_tensorboard=False

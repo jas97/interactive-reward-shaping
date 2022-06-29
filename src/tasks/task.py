@@ -3,7 +3,6 @@ import torch
 from stable_baselines3 import DQN
 from torch.utils.data import TensorDataset
 
-from src.envs.gridworld import Gridworld
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback
 from src.reward_modelling.reward_model import RewardModel
 from src.util import evaluate_policy

@@ -1,9 +1,9 @@
 import gym
 
-from src.envs.gridworld import Gridworld
+from src.envs.custom.gridworld import Gridworld
 from src.tasks.task import Task
 from src.util import seed_everything
-import argparse, sys
+import argparse
 
 
 def main():
