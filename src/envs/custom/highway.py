@@ -1,31 +1,32 @@
-import highway_env
+
 import numpy as np
+from highway_env.envs import highway_env
 
 
-class HighwayEnv(highway_env):
+class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
     def __init__(self, shaping=False, time_window=5):
         super().__init__()
-        self.world_dim = 5
         self.shaping = shaping
         self.time_window = time_window
 
         self.episode = []
 
-        #TODO: change parameters for inventory env
-        self.lows = np.zeros((25, 0))
-        self.highs = np.ones((25, 0))
+        self.lows = np.zeros((25, ))
+        self.highs = np.ones((25, ))
+        self.lows.fill(-1)
 
     def step(self, action):
-        self.past.append(self.state.flatten())
+        self.episode.append((self.state.flatten(), action))
 
-        self.state, rew, done, info = super.step(action)
-
-        aug_rew = self.augment_reward(action, self.state.flatten())
+        self.state, rew, done, info = super().step(action)
 
         info['true_rew'] = rew
 
-        return self.state, aug_rew, done, info
+        if self.shaping:
+            rew += self.augment_reward(action, self.state.flatten())
+
+        return self.state, rew, done, info
 
     def reset(self):
         self.episode = []
@@ -38,6 +39,9 @@ class HighwayEnv(highway_env):
     def render(self):
         super().render()
 
+    def render_state(self, state):
+        print(state.flatten()[0:5])
+
     def augment_reward(self, action, state):
         running_rew = 0
         past = self.episode
@@ -46,10 +50,22 @@ class HighwayEnv(highway_env):
             s, a = past[j]
             if curr >= self.time_window:
                 break
-            state_enc = np.array(list(s) + list(s - state) + [curr])
 
-            rew = self.reward_model.predict(state_enc)
-            running_rew += rew.item()
+            state_enc = self.encode_diff(state, s, curr)
+            try:
+                rew = self.reward_model.predict(state_enc, feedback_type='state_dff').item()
+            except ValueError:
+                rew = 0.0
+
+            running_rew += rew
+
+            actions = np.array([a for (s, a) in past[0:j]])
+            try:
+                actions_rew = self.reward_model.predict(actions, feedback_type='actions').item()
+            except ValueError:
+                actions_rew = 0.0
+
+            running_rew += actions_rew
 
         return running_rew
 
@@ -58,3 +74,7 @@ class HighwayEnv(highway_env):
 
     def set_shaping(self, boolean):
         self.shaping = boolean
+
+    def encode_diff(self, start_s, end_s, timesteps):
+        enc = np.array(list(start_s.flatten()) + list(end_s.flatten() - start_s.flatten()) + [timesteps])
+        return enc

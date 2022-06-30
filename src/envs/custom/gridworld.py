@@ -160,3 +160,7 @@ class Gridworld(gym.Env):
 
     def set_shaping(self, boolean):
         self.shaping = boolean
+
+    def encode_diff(self, start_s, end_s, timesteps):
+        enc = np.array(list(start_s) + list(end_s - start_s) + [timesteps])
+        return enc

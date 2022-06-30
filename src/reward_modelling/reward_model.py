@@ -12,30 +12,45 @@ class RewardModel:
     def __init__(self, time_window):
         self.time_window = time_window
 
-        self.net = RewardNet()
         self.buffer = ReplayBuffer(capacity=10000, time_window=self.time_window)
 
-        self.optimizer = optim.Adam(self.net.parameters(), lr=0.0001)
-        self.criterion = nn.L1Loss()
+        self.state_diff_predictor = RandomForestRegressor(n_estimators=10, random_state=0)
+        self.actions_predictor = RandomForestRegressor(n_estimators=10, random_state=0)
+        self.features_predictor = RandomForestRegressor(n_estimators=10, random_state=0)
 
-    def update(self, D):
-        # update the buffer
-        self.buffer.update(D)
-        dataloader = self.buffer.get_data_loader()
+    def update(self, feedback_type='state_diff'):
+        dataset = self.buffer.get_dataset(feedback_type)
+        X = np.array(dataset.tensors[0])
+        y = np.array(dataset.tensors[1])
 
-        X = np.array(self.buffer.dataset.tensors[0])
-        y = np.array(self.buffer.dataset.tensors[1])
-        regressor = RandomForestRegressor(n_estimators=10, random_state=0)
+        if feedback_type == 'state_diff':
+            regressor = self.state_diff_predictor
+        elif feedback_type == 'actions':
+            regressor = self.actions_predictor
+        elif feedback_type == 'feature':
+            regressor = self.features_predictor
+
         regressor.fit(X, y)
-        self.predictor = regressor
 
-        pred = regressor.predict(np.array(self.buffer.dataset.tensors[0]))
+        pred = regressor.predict(X)
         mse = np.mean((y - pred) ** 2)
 
         print('Trained with random forest. Mean squared error: {}'.format(mse))
 
-    def predict(self, state_enc):
-        state_enc = np.array(state_enc).reshape(1, -1)
-        return self.predictor.predict(state_enc)
+    def update_buffer(self, D, feedback_type):
+        self.buffer.update(D, feedback_type)
+
+    def predict(self, encoding, feedback_type='state_diff'):
+        if feedback_type == 'state_diff':
+            predictor = self.state_diff_predictor
+        elif feedback_type == 'actions':
+            predictor = self.actions_predictor
+        elif feedback_type == 'feature':
+            predictor = self.features_predictor
+
+        encoding = np.array(encoding).reshape(1, -1)
+        return predictor.predict(encoding)
+
+
 
 

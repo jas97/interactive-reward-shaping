@@ -136,7 +136,7 @@ class ConvVAETrainer(Serializable):
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch,
                     batch_idx * len(data),
-                    len(self.train_loader.dataset),
+                    len(self.train_loader.state_diff),
                     100. * batch_idx / len(self.train_loader),
                     loss.item() / len(next_obs)))
 

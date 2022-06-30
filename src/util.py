@@ -14,18 +14,19 @@ def play_episode(model, env, verbose=0):
     total_rew = 0.0
 
     while not done:
-        action, _ = model.predict(obs)
+        action, _ = model.predict(obs, deterministic=True)
         obs, rew, done, _ = env.step(action)
-
+        if verbose:
+            env.render()
         total_rew += rew
 
     return total_rew
 
 
-def evaluate_policy(model, env, n_ep=100):
+def evaluate_policy(model, env, verbose=False, n_ep=100):
     rews = []
     for i in range(n_ep):
-        ep_rew = play_episode(model, env)
+        ep_rew = play_episode(model, env, verbose)
         rews.append(ep_rew)
 
     return np.mean(rews)

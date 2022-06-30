@@ -1,6 +1,6 @@
-import json
 import numpy as np
 import torch
+from dtw import dtw
 from torch.utils.data import TensorDataset
 
 
@@ -18,76 +18,14 @@ def present_successful_traj(model, env, n_traj=10):
         print('------------------\n Trajectory {} \n------------------\n'.format(i))
         play_trajectory(env, t)
 
-
-def gather_feedback(task_name):
-    json_path = 'feedback/{}.json'.format(task_name)
-    with open(json_path, 'r') as json_file:
-        data = json.loads(json_file.read())
-        f = data['feedback']
-        important_features = data['important_features']
-        timesteps = data['timesteps']
-
-    return [(f, important_features, timesteps)]
-
-
-def augment_feedback(traj, important_features, timesteps, env, feedback_type='diff', time_window=5, datatype='int', length=100):
-    print('Augmenting feedback...')
-    start_state = traj[0][0]
-    end_state = traj[-1][0]
-
-    state_diff = list(np.array(start_state) - np.array(end_state))
-
-    if feedback_type == 'diff':
-        # append difference in states to the start state
-        state_enc = np.array(start_state + state_diff + [timesteps])
-        enc_len = state_enc.shape[0]
-
-        # generate mask to preserve important features
-        random_mask = np.ones((length, enc_len))
-        random_mask[:, important_features] = 0
-        inverse_random_mask = 1 - random_mask
-
-        D = np.tile(state_enc, (length, 1))
-
-        lows = np.zeros((enc_len, ))
-        highs = np.zeros((enc_len, ))
-
-        lows[0: int(enc_len/2)] = env.lows
-        highs[0:int(enc_len/2)] = env.highs
-
-        lows[int(enc_len/2):-1] = env.lows - env.highs + 1  # because lower bound is inclusive
-        highs[int(enc_len/2):-1] = env.highs - env.lows
-
-        # timesteps limits
-        lows[-1] = 1
-        highs[-1] = time_window
-
-        # generate matrix of random values within allowed ranges
-        if datatype == 'int':
-            rand_D = np.random.randint(lows, highs, size=(length, enc_len))
-        else:
-            rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
-
-        D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
-
-        # reward for feedback is always -1
-        D = torch.tensor(D)
-        D = torch.unique(D, dim=0)
-
-        y = np.zeros((len(D),))
-        y.fill(-1)
-        y = torch.tensor(y)
-
-        dataset = TensorDataset(D, y)
-
-        print('Generated {} augmented samples'.format(len(dataset)))
-        return dataset
+    return filtered_traj
 
 
 def play_trajectory(env, traj):
-    for s, a in traj:
+    for i, (s, a) in enumerate(traj):
         env.render_state(s)
-        print('Action = {}'.format(a))
+        print('------------------\n Timestep = {}'.format(i))
+        print('Action = {}\n------------------\n '.format(a))
 
 
 def gather_trajectories(model, env, n_traj):
@@ -110,10 +48,114 @@ def get_ep_traj(model, env):
     total_rew = 0.0
 
     while not done:
-        action, _ = model.predict(obs)
+        action, _ = model.predict(obs, deterministic=True)
         traj.append((obs, action))
 
         obs, rew, done, _ = env.step(action)
         total_rew += rew
 
     return traj, total_rew
+
+def gather_feedback(best_traj):
+    print('Gathering user feedback')
+    # TODO: loop for more feedback
+    done = False
+    feedback = []
+
+    while not done:
+        print('Input feedback type (state_diff, actions or feature)')
+        feedback_type = input()
+        print('Input trajectory number:')
+        traj_id = int(input())
+        print('Enter starting timestep:')
+        start_timestep = int(input())
+        print('Enter ending timestep:')
+        end_timestep = int(input())
+
+        f = best_traj[traj_id][start_timestep:(end_timestep + 1)]  # for inclusivity + 1
+
+        timesteps = end_timestep - start_timestep
+
+        print('Enter ids of important features separated by space:')
+        important_features = input()
+        important_features = [int(x) for x in important_features.split(' ')]
+
+        feedback.append((feedback_type, f, important_features, timesteps))
+
+        print('Enter another trajectory (y/n?)')
+        cont = input()
+        if cont == 'y':
+            done = False
+        else:
+            done = True
+
+    return feedback
+
+
+def augment_feedback_diff(traj, important_features, timesteps, env, time_window=5, datatype='int', length=100):
+    print('Augmenting feedback...')
+    start_state = traj[0][0]
+    end_state = traj[-1][0]
+
+    # append difference in states to the start state
+    state_enc = env.encode_diff(start_state, end_state, timesteps)
+    enc_len = state_enc.shape[0]
+
+    # generate mask to preserve important features
+    random_mask = np.ones((length, enc_len))
+    random_mask[:, important_features] = 0
+    inverse_random_mask = 1 - random_mask
+
+    D = np.tile(state_enc, (length, 1))
+
+    lows = np.zeros((enc_len, ))
+    highs = np.zeros((enc_len, ))
+
+    lows[0: int(enc_len/2)] = env.lows
+    highs[0:int(enc_len/2)] = env.highs
+
+    lows[int(enc_len/2):-1] = env.lows - env.highs + 1  # because lower bound is inclusive
+    highs[int(enc_len/2):-1] = env.highs - env.lows
+
+    # timesteps limits
+    lows[-1] = 1
+    highs[-1] = time_window
+
+    # generate matrix of random values within allowed ranges
+    if datatype == 'int':
+        rand_D = np.random.randint(lows, highs, size=(length, enc_len))
+    else:
+        rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
+
+    D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
+
+    # reward for feedback is always -1
+    D = torch.tensor(D)
+    D = torch.unique(D, dim=0)
+
+    y = np.zeros((len(D),))
+    y.fill(-1)
+    y = torch.tensor(y)
+
+    dataset = TensorDataset(D, y)
+
+    print('Generated {} augmented samples'.format(len(dataset)))
+    return dataset
+
+
+def augment_feedback_actions(feedback_traj, env, length=2000, threshold=0.2):
+    actions = [a for (s, a) in feedback_traj]
+    traj_len = len(actions)
+    max_action = env.action_space.n
+
+    # generate random sequences of actions
+    random_traj = np.random.randint(0, max_action, size=(length*100, traj_len))
+
+    # find similarities to the original trajectory actions using dynamic time warping
+    sims = [dtw(actions, traj, keep_internals=True).normalizedDistance for traj in random_traj]
+
+    # filter out only the most similar trajectories
+    boolean_sim = np.array(sims) > threshold
+    filtered_traj = random_traj[boolean_sim]
+
+    return filtered_traj

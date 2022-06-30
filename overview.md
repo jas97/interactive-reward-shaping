@@ -24,9 +24,9 @@
 
 ![](img/alg_flow.png)
 
-Questions:
+### Open Questions:
 
-* How to present summary of policy to user?
+* How to choose summary of policy to present to the user? How to make sure presented trajectories summaries agent's learned knowledge and not random behavior?
 * How to augment user's feedback using the provided explanation?
 * How to learn reward shaping from augmented feedback?
 
