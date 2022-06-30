@@ -1,11 +1,12 @@
 from stable_baselines3 import DQN
 
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, \
-    augment_feedback_actions, augment_feedback_diff
+    augment_feedback_actions, augment_feedback_diff, FeedbackTypes
 from src.reward_modelling.reward_model import RewardModel
 from src.tasks.task_util import init_replay_buffer, check_dtype
 from src.util import evaluate_policy
 from src.visualization.visualization import visualize_feature
+
 
 
 class Task:
@@ -77,7 +78,7 @@ class Task:
 
             for feedback_type, feedback_traj, important_features, timesteps in feedback:
                 # augment feedback for each trajectory
-                if feedback_type == 'state_diff':
+                if feedback_type == FeedbackTypes.STATE_DIFF:  # TODO: turn feedback types into constants
                     D = augment_feedback_diff(feedback_traj,
                                          important_features,
                                          timesteps,
@@ -85,7 +86,7 @@ class Task:
                                          time_window=self.time_window,
                                          datatype=self.datatype,
                                          length=500)
-                elif feedback_type == 'actions':
+                elif feedback_type == FeedbackTypes.ACTIONS:
                     D = augment_feedback_actions(feedback_traj,
                                                  self.env,
                                                  length=2000)
@@ -93,7 +94,7 @@ class Task:
                 self.reward_model.update_buffer(D, feedback_type)
 
             # TODO: update other feedback rewards separately
-            self.reward_model.update('state_diff')
+            self.reward_model.update(FeedbackTypes.STATE_DIFF)
 
 
 

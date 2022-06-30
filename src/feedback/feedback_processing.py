@@ -2,6 +2,13 @@ import numpy as np
 import torch
 from dtw import dtw
 from torch.utils.data import TensorDataset
+from enum import Enum
+
+
+class FeedbackTypes(Enum):
+     STATE_DIFF = 'state_diff'
+     ACTIONS = 'actions'
+     FEATURE = 'feature'
 
 
 def present_successful_traj(model, env, n_traj=10):

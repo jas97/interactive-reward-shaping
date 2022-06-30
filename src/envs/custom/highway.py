@@ -2,6 +2,8 @@
 import numpy as np
 from highway_env.envs import highway_env
 
+from src.feedback.feedback_processing import FeedbackTypes
+
 
 class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
@@ -53,7 +55,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
             state_enc = self.encode_diff(state, s, curr)
             try:
-                rew = self.reward_model.predict(state_enc, feedback_type='state_dff').item()
+                rew = self.reward_model.predict(state_enc, feedback_type=FeedbackTypes.STATE_DIFF).item()
             except ValueError:
                 rew = 0.0
 
@@ -61,7 +63,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
             actions = np.array([a for (s, a) in past[0:j]])
             try:
-                actions_rew = self.reward_model.predict(actions, feedback_type='actions').item()
+                actions_rew = self.reward_model.predict(actions, feedback_type=FeedbackTypes.ACTIONS).item()
             except ValueError:
                 actions_rew = 0.0
 
