@@ -30,8 +30,8 @@ def present_successful_traj(model, env, n_traj=10):
 
 def play_trajectory(env, traj):
     for i, (s, a) in enumerate(traj):
-        env.render_state(s)
         print('------------------\n Timestep = {}'.format(i))
+        env.render_state(s)
         print('Action = {}\n------------------\n '.format(a))
 
 
@@ -55,13 +55,14 @@ def get_ep_traj(model, env):
     total_rew = 0.0
 
     while not done:
-        action, _ = model.predict(obs, deterministic=True)
+        action, _ = model.predict(obs)  # TODO: deterministic has to be True for highway
         traj.append((obs, action))
 
         obs, rew, done, _ = env.step(action)
         total_rew += rew
 
     return traj, total_rew
+
 
 def gather_feedback(best_traj):
     print('Gathering user feedback')

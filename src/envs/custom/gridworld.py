@@ -25,7 +25,7 @@ class Gridworld(gym.Env):
         self.max_steps = 50
         self.steps = 0
 
-        self.lmbda = 1  # for testing (should be [0,1] otherwise)
+        self.lmbda = 1  # for testing (should be [0, 1] otherwise)
 
         # keep record of the last episode
         self.episode = []
@@ -68,6 +68,7 @@ class Gridworld(gym.Env):
         agent_x, agent_y, goal_x, goal_y, orient = state
 
         if (agent_x == goal_x) and (agent_y == goal_y):
+            print('Solved!')
             return True
 
         return False
@@ -97,7 +98,8 @@ class Gridworld(gym.Env):
             s, a = past[j]
             if curr >= self.time_window:
                 break
-            state_enc = np.array(list(s) + list(s - state) + [curr])
+
+            state_enc = self.encode_diff(s, state, curr)
 
             rew = self.reward_model.predict(state_enc)
             running_rew += rew.item()
@@ -111,7 +113,7 @@ class Gridworld(gym.Env):
         agent_x = random.randint(0, self.world_dim - 1)
         agent_y = random.randint(0, self.world_dim - 1)
 
-        while (agent_x == goal_x) and (agent_y == goal_y):
+        while (abs(agent_x - goal_x) < 2) or (abs(agent_y - goal_y) < 2):
             agent_x = random.randint(0, self.world_dim - 1)
             agent_y = random.randint(0, self.world_dim - 1)
 
@@ -164,3 +166,16 @@ class Gridworld(gym.Env):
     def encode_diff(self, start_s, end_s, timesteps):
         enc = np.array(list(start_s) + list(end_s - start_s) + [timesteps])
         return enc
+
+    def encode_actions(self, action, past):
+        enc = [self.action_space.n] * self.time_window
+
+        i = 0
+        for el in past:
+            enc[i] = el[1]
+            i += 1
+
+        if i < self.time_window:
+            enc[i] = action
+
+        return np.array(enc)

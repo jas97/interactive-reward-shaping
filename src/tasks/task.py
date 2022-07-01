@@ -21,7 +21,7 @@ class Task:
         self.reward_model = RewardModel(time_window)
 
         # initialize buffer of the reward model
-        self.reward_model.buffer.initialize(init_replay_buffer(self.env, self.time_window))
+        self.reward_model.buffer.initialize(*init_replay_buffer(self.env, self.time_window))
 
         # check the dtype of env state space
         self.datatype = check_dtype(self.env)
@@ -51,6 +51,7 @@ class Task:
                             train_freq=1,
                             gradient_steps=1,
                             target_update_interval=50,
+                            exploration_fraction=0.8, # TODO: added for gridworld
                             verbose=1)
                 print('First time training the model')
 
@@ -67,7 +68,7 @@ class Task:
 
             # visualize y feature in highway env
             title = 'Before reward shaping' if iteration == 1 else 'After reward shaping'
-            visualize_feature(best_traj, 2, title)
+            visualize_feature(best_traj, 4, plot_actions=True, title=title)  # TODO: remove hardcoding
 
             if iteration == 2:
                 break

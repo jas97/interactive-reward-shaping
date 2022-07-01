@@ -82,3 +82,17 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
     def encode_diff(self, start_s, end_s, timesteps):
         enc = np.array(list(start_s.flatten()) + list(end_s.flatten() - start_s.flatten()) + [timesteps])
         return enc
+
+    def encode_actions(self, action, past):
+        enc = [self.action_space.n] * self.time_window
+
+        i = 0
+        for el in past:
+            print(past)
+            enc[i] = el[1]
+            i += 1
+
+        if i < self.time_window:
+            enc[i] = action
+
+        return np.array(enc)

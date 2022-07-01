@@ -19,7 +19,7 @@ def main():
     model_path = 'trained_models/{}'.format(task_name)
 
     if task_name == 'gridworld':
-        feedback_freq = 50000  # training stops every 50k steps and feedback is gathered
+        feedback_freq = int(15000)
         time_window = 5
         env = Gridworld(time_window=time_window)
     if task_name == 'highway':

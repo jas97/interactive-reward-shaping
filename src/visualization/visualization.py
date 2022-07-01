@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 
-def visualize_feature(traj, feature_id, title=''):
+def visualize_feature(traj, feature_id, plot_actions=False, title=''):
     feature_vals = []
     for t in traj:
         ep_vals = [p[0].flatten()[feature_id] for p in t]
@@ -12,3 +12,14 @@ def visualize_feature(traj, feature_id, title=''):
     plt.title(title)
 
     plt.show()
+
+    if plot_actions:
+        actions = []
+        for t in traj:
+            ep_actions = [p[1] for p in t]
+            actions.append(ep_actions)
+
+        for a_vals in actions:
+            plt.plot(a_vals)
+
+        plt.show()

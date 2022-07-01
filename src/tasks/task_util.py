@@ -20,6 +20,7 @@ def check_dtype(env):
 def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized also using a trained policy
     print('Initializing replay buffer with env reward...')
     D = []
+    A = []
 
     for i in tqdm(range(100)):
         done = False
@@ -34,7 +35,9 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
                     break
 
                 state_enc = env.encode_diff(s, obs, curr)
+                action_enc = env.encode_actions(action, past[j:])
 
+                A.append(action_enc)
                 D.append(state_enc)
                 curr += 1
 
@@ -43,10 +46,19 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
     D = torch.tensor(np.array(D))
     D = torch.unique(D, dim=0)  # remove duplicates
 
-    y = np.zeros((len(D), ))
-    y = torch.tensor(y)
+    A = torch.tensor(np.array(A))
+    A = torch.unique(A, dim=0)
 
-    dataset = TensorDataset(D, y)
-    print('Generated {} env samples'.format(len(D)))
+    y_D = np.zeros((len(D), ))
+    y_D = torch.tensor(y_D)
 
-    return dataset
+    y_A = np.zeros((len(A),))
+    y_A = torch.tensor(y_A)
+
+    state_diff_dataset = TensorDataset(D, y_D)
+    print('Generated {} env samples for state_diff'.format(len(D)))
+
+    action_dataset = TensorDataset(A, y_A)
+    print('Generated {} env samples for state_diff'.format(len(A)))
+
+    return state_diff_dataset, action_dataset

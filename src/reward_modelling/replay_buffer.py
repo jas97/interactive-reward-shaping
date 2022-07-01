@@ -11,9 +11,9 @@ class ReplayBuffer:
         self.capacity = capacity
         self.time_window = time_window
 
-    def initialize(self, dataset):
+    def initialize(self, dataset, action_dataset):
         self.state_diff = dataset
-        self.actions = dataset
+        self.actions = action_dataset
         self.feature = dataset
 
         self.original_data = self.state_diff.tensors[0]
@@ -32,6 +32,7 @@ class ReplayBuffer:
 
         # every sample similar to new data in important features should be labelled as -1
         # y = [0 if len(torch.where((x == self.original_data).all(dim=1))[0]) else -1 for x in unique_dataset]
+        # TODO: separate for feedback types
         y = torch.cat([self.state_diff.tensors[1], new_data.tensors[1]])
         y = [-1 if self.similar_to_data(new_data.tensors[0], full_dataset[i], important_features, datatype, feedback_type) else l for i, l in enumerate(y)]
         y = torch.tensor(y)
@@ -47,10 +48,12 @@ class ReplayBuffer:
         # TODO: different options than mse of important features
         if feedback_type == FeedbackTypes.STATE_DIFF:
             if datatype == 'int':
-                return 0
+                im_feature_vals = x[important_features]
+                exists = torch.where((data[:, important_features] == im_feature_vals).all())
+                return len(exists[0]) > 0
             else:
                 mean_features = torch.mean(data, axis=0)
-                similarity = abs(mean_features[tuple(important_features)] - x[tuple(important_features)])
+                similarity = abs(mean_features[important_features] - x[important_features])
 
                 return similarity < threshold
 
