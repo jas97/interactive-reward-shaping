@@ -33,7 +33,8 @@ class Task:
         while not finished_training:
             print('Iteration = {}'.format(iteration))
             try:
-                model = DQN.load(self.model_path, verbose=1, env=self.env)
+                model_path = self.model_path + '_{}'.format(iteration-1)
+                model = DQN.load(model_path, verbose=1, env=self.env)
                 print('Loaded saved model')
                 self.env.set_shaping(True)
                 # if it's not the first iteration reward model should be used
@@ -55,7 +56,7 @@ class Task:
 
             print('Training DQN for {} timesteps'.format(self.feedback_freq))
             model.learn(total_timesteps=self.feedback_freq)
-            model.save(self.model_path)
+            model.save(self.model_path + '_{}'.format(iteration))
 
             # evaluate partially trained model
             mean_rew = evaluate_policy(model, self.env)
@@ -78,23 +79,29 @@ class Task:
 
             for feedback_type, feedback_traj, important_features, timesteps in feedback:
                 # augment feedback for each trajectory
-                if feedback_type == FeedbackTypes.STATE_DIFF:  # TODO: turn feedback types into constants
+                if feedback_type == FeedbackTypes.STATE_DIFF.value:  # TODO: turn feedback types into constants
+                    feedback_type = FeedbackTypes.STATE_DIFF
                     D = augment_feedback_diff(feedback_traj,
                                          important_features,
                                          timesteps,
                                          self.env,
                                          time_window=self.time_window,
                                          datatype=self.datatype,
-                                         length=500)
-                elif feedback_type == FeedbackTypes.ACTIONS:
+                                         length=1000)
+                elif feedback_type == FeedbackTypes.ACTIONS.value:
+                    feedback_type = FeedbackTypes.ACTIONS
                     D = augment_feedback_actions(feedback_traj,
                                                  self.env,
-                                                 length=2000)
+                                                 length=1000)
 
-                self.reward_model.update_buffer(D, feedback_type)
+                self.reward_model.update_buffer(D,
+                                                important_features,
+                                                self.datatype,
+                                                feedback_type)
 
             # TODO: update other feedback rewards separately
             self.reward_model.update(FeedbackTypes.STATE_DIFF)
+            iteration += 1
 
 
 

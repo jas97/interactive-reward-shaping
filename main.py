@@ -1,5 +1,3 @@
-import gym
-
 from src.envs.custom.gridworld import Gridworld
 from src.envs.custom.highway import CustomHighwayEnv
 from src.tasks.task import Task
@@ -25,7 +23,7 @@ def main():
         time_window = 5
         env = Gridworld(time_window=time_window)
     if task_name == 'highway':
-        feedback_freq = int(1e4)
+        feedback_freq = int(2e4)
         time_window = 5
         env = CustomHighwayEnv(time_window=5)
         env.config['lanes_count'] = 4

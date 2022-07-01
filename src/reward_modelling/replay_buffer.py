@@ -16,8 +16,10 @@ class ReplayBuffer:
         self.actions = dataset
         self.feature = dataset
 
-    def update(self, new_data, feedback_type=FeedbackTypes.STATE_DIFF):
-        print('Updating reward network...')
+        self.original_data = self.state_diff.tensors[0]
+
+    def update(self, new_data, important_features, datatype, feedback_type=FeedbackTypes.STATE_DIFF):
+        print('Updating reward buffer...')
 
         if feedback_type == FeedbackTypes.STATE_DIFF:
             full_dataset = torch.cat([self.state_diff.tensors[0], new_data.tensors[0]])
@@ -26,17 +28,31 @@ class ReplayBuffer:
         elif feedback_type == FeedbackTypes.FEATURE:
             full_dataset = torch.cat([self.feature.tensors[0], new_data.tensors[0]])
 
-        unique_dataset = torch.unique(full_dataset, dim=0)
+        # unique_dataset = torch.unique(full_dataset, dim=0)
 
-        y = [-1 if len(torch.where((x == new_data.tensors[0]).all(dim=1))[0]) > 0 else 0 for x in unique_dataset]
-        y = torch.tensor(np.array(y))
+        # every sample similar to new data in important features should be labelled as -1
+        # y = [0 if len(torch.where((x == self.original_data).all(dim=1))[0]) else -1 for x in unique_dataset]
+        y = torch.cat([self.state_diff.tensors[1], new_data.tensors[1]])
+        y = [-1 if self.similar_to_data(new_data.tensors[0], full_dataset[i], important_features, datatype, feedback_type) else l for i, l in enumerate(y)]
+        y = torch.tensor(y)
 
         if feedback_type == FeedbackTypes.STATE_DIFF:
-            self.state_diff = TensorDataset(unique_dataset, y)
+            self.state_diff = TensorDataset(full_dataset, y)
         elif feedback_type == FeedbackTypes.ACTIONS:
-            self.actions = TensorDataset(unique_dataset, y)
+            self.actions = TensorDataset(full_dataset, y)
         elif feedback_type == FeedbackTypes.FEATURE:
-            self.feature = TensorDataset(unique_dataset, y)
+            self.feature = TensorDataset(full_dataset, y)
+
+    def similar_to_data(self, data, x, important_features, datatype, feedback_type, threshold=0.05):
+        # TODO: different options than mse of important features
+        if feedback_type == FeedbackTypes.STATE_DIFF:
+            if datatype == 'int':
+                return 0
+            else:
+                mean_features = torch.mean(data, axis=0)
+                similarity = abs(mean_features[tuple(important_features)] - x[tuple(important_features)])
+
+                return similarity < threshold
 
     def get_data_loader(self, feedback_type=FeedbackTypes.STATE_DIFF):
         if feedback_type == FeedbackTypes.STATE_DIFF:

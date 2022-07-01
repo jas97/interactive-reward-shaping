@@ -18,6 +18,8 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         self.highs = np.ones((25, ))
         self.lows.fill(-1)
 
+        self.lmbda = 0.5
+
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
 
@@ -55,15 +57,15 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
             state_enc = self.encode_diff(state, s, curr)
             try:
-                rew = self.reward_model.predict(state_enc, feedback_type=FeedbackTypes.STATE_DIFF).item()
+                rew = self.lmbda * self.reward_model.predict(state_enc, feedback_type=FeedbackTypes.STATE_DIFF).item()
             except ValueError:
                 rew = 0.0
 
             running_rew += rew
 
-            actions = np.array([a for (s, a) in past[0:j]])
+            actions = np.array([a for (s, a) in past[0: j]])
             try:
-                actions_rew = self.reward_model.predict(actions, feedback_type=FeedbackTypes.ACTIONS).item()
+                actions_rew = self.lmbda * self.reward_model.predict(actions, feedback_type=FeedbackTypes.ACTIONS).item()
             except ValueError:
                 actions_rew = 0.0
 

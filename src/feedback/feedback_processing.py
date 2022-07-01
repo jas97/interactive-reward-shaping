@@ -6,9 +6,9 @@ from enum import Enum
 
 
 class FeedbackTypes(Enum):
-     STATE_DIFF = 'state_diff'
-     ACTIONS = 'actions'
-     FEATURE = 'feature'
+    STATE_DIFF = 'state_diff'
+    ACTIONS = 'actions'
+    FEATURE = 'feature'
 
 
 def present_successful_traj(model, env, n_traj=10):
@@ -115,6 +115,10 @@ def augment_feedback_diff(traj, important_features, timesteps, env, time_window=
 
     D = np.tile(state_enc, (length, 1))
 
+    if datatype != 'int':
+        # adding noise for continuous state features
+        D = D + np.random.normal(0, 0.001, (length, enc_len))
+
     lows = np.zeros((enc_len, ))
     highs = np.zeros((enc_len, ))
 
@@ -134,6 +138,7 @@ def augment_feedback_diff(traj, important_features, timesteps, env, time_window=
     else:
         rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
 
+    # TODO: for continuous data probably should be added small noise
     D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
 
     # reward for feedback is always -1
