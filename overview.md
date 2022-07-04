@@ -55,9 +55,13 @@ WHILE True:\
             $B$ =  update_buffer($B, D_A$)                              \\\\ update buffer with augmented feedback
 
         update_reward_model$(R_s, B)$                                   \\\\ update reward model with feedback data
+        
+        
+<p align="center"> 
+  <img src="img/alg_flow.png" width="600" class="center">
+<p>
   
-<img src="img/alg_flow.png" width="480" class="center">
-
+  
 ### Trajectory Feedback   
 
 * In what form should human feedback be collected and how should it be integrated in updating the reward model?
