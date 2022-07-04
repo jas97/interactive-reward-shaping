@@ -97,8 +97,11 @@ Under this reward, agent learns to turn in place, thus keeping cummulative rewar
 For initial experiment, a trajectory where agent makes 4 turns is marked as undesirable
 
 **Result:** action distribution through successful episodes before vs after reward shaping:
-
-![](img/before_gridworld.png) ![](img/after_gridworld.png)
+  
+<p align="center"> 
+   <img src="img/before_gridworld.png" width="480" class="center">
+   <img src="img/after_gridworld.png" width="480" class="center">
+<p>
 
 ### Highway Environment
 
@@ -119,7 +122,9 @@ Environment reward:
 
 Results in policy that orders 20 - 40 items each time step, as demand is sampled around 30:
 
-![](img/env_reward_inventory.png)
+<p align="center"> 
+   <img src="img/env_reward_inventory.png" width="600" class="center">
+<p>
 
 * Assume there is a one-off fee associated with each delivery (regardless of number of items).
 Optimal policy would prefer to order less often, but in bigger batches.
@@ -127,8 +132,11 @@ Optimal policy would prefer to order less often, but in bigger batches.
 * For initial experiment, 5-step trajectories where agent orders 20 - 40 items are marked as undesirable.
 * Action-based feedback 
 * Action distribution before reward shaping vs. after reward shaping:
-
-![](img/before_inventory.png) ![](img/after_inventory.png)
+  
+<p align="center"> 
+   <img src="img/before_inventory.png" width="480" class="center">
+   <img src="img/after_inventory.png" width="480" class="center">
+<p>
 
 ### Limitations
 
