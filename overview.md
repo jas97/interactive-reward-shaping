@@ -46,15 +46,15 @@ Output:
  * Policy $\pi_s$ consistent with user feedback
 
 WHILE True:\
-        $B$ =initialize_buffer$(E)$                                     \\\\ initialize buffer with environment trajectories\
-        $\pi$ = train$(M, E, R_s)$                                      \\\\ learn partial policy\
-        summary  = summarize($\pi, E$)                                  \\\\ summarize policy\
-        feedback = get_feedback(summary, user)                          \\\\ gather feedback trajectories and their explanations from the user\
+        $B$ =initialize_buffer$(E)$                                                \\\\ initialize buffer with environment trajectories\
+        $\pi$ = train$(M, E, R_s)$                                                 \\\\ learn partial policy\
+        summary  = summarize($\pi, E$)                                        \\\\ summarize policy\
+        feedback = get_feedback(summary, user)                         \\\\ gather feedback trajectories and their explanations from the user\
         for each (feedback_trajectory, explanation):      
-            $D_A$ = augment_feedback(feedback_trajectory, explanation)  \\\\ augment feedback\
-            $B$ =  update_buffer($B, D_A$)                              \\\\ update buffer with augmented feedback
+                $D_A$ = augment_feedback(feedback_trajectory, explanation)       \\\\ augment feedback\
+                $B$ =  update_buffer($B, D_A$)                                   \\\\ update buffer with augmented feedback
 
-        update_reward_model$(R_s, B)$                                   \\\\ update reward model with feedback data
+        update_reward_model$(R_s, B)$                                         \\\\ update reward model with feedback data
         
         
 <p align="center"> 
