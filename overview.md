@@ -25,6 +25,8 @@
 
 ## Approach
 
+### Algorithm 
+
 Input: 
  * Environment $E$
  * Policy model $M$ (e.g. DQN)
@@ -44,8 +46,6 @@ WHILE True:\
 
         update_reward_model$(R_s, B)$                                   \\\\ update reward model with feedback data
   
-
-### Algorithm
 
 ![](img/alg_flow.png)
 
