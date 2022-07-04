@@ -33,8 +33,7 @@ Input:
 Output:
  * Policy $\pi_s$ consistent with user feedback
 
-WHILE True:      
-
+WHILE True:    
         $B$ =initialize_buffer$(E)$                                     \\\\ initialize buffer with environment trajectories    
         $\pi$ = train$(M, E, R_s)$                                      \\\\ learn partial policy
         summary  = summarize($\pi, E$)                                  \\\\ summarize policy
