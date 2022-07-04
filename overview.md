@@ -73,7 +73,7 @@ WHILE True:\
       * **Explanation**: offered as a set of important features
       * **Data augmentation**: augmented samples are obtained from the feedback trajectory by randomizing unimportant features.
   * **Action-based** 
-    * Performing actions a_1, ..., a_k should be penalized (e.g. changing speed every step)
+    * Performing actions $a_1, ..., a_k$ should be penalized (e.g. changing speed every step)
     * **Initial solution:**
       * **Trajectory encoding:** a list of actions $[a_1, ..., a_k]$
       * **Explanation:** NOT IMPLEMENTED
