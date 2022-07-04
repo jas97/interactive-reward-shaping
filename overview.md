@@ -35,9 +35,9 @@ Output:
 
 WHILE True:      
 
-        $B =$ initialize_buffer$(E)$                                    \\\\ initialize buffer with environment trajectories    
-        $\pi =$ train$(M, E, R_s)$                                      \\\\ learn partial policy.  
-        summary  = summarize($\pi, E$)                                  \\\\ summarize policy.        
+        $B$ =initialize_buffer$(E)$                                     \\\\ initialize buffer with environment trajectories    
+        $\pi$ = train$(M, E, R_s)$                                      \\\\ learn partial policy
+        summary  = summarize($\pi, E$)                                  \\\\ summarize policy
         feedback = get_feedback(summary, user)                          \\\\ gather feedback trajectories and their explanations from the user            
         for each feedback_trajectory, explanation:      
             $D_A$ = augment_feedback(feedback_trajectory, explanation)  \\\\ augment feedback            
