@@ -62,6 +62,17 @@ WHILE True:\
 <p>
   
   
+During training, reward shaping model is used to augment the environment's reward function in the following way:
+1. At timestep $t$ agent receives environment reward $r_e(s_t, a_t)$ 
+2. Agent's previous trajectory $T_p = <(s_{t-k}, a_{t-k}), ..., (s_{t-1}, a_{t-1}), (s_t, a_t)>$ is recorded. Parameter $k$ is the time horizon.
+3. Reward shaping model takes as an input the trajectory $T_p$ and outputs a reward augmentation $r_s$
+4. Final reward for the agent is 
+  $$
+    r = r_e + \lambda * r_s
+  $$
+where $\lambda$ is a shaping parameter determining how influential the shaping is.  
+  
+  
 ### Trajectory Feedback   
 
 * In what form should human feedback be collected and how should it be integrated in updating the reward model?
