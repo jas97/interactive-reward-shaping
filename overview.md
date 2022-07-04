@@ -66,11 +66,7 @@ During training, reward shaping model is used to augment the environment's rewar
 1. At timestep $t$ agent receives environment reward $r_e(s_t, a_t)$ 
 2. Agent's previous trajectory $T_p = <(s_{t-k}, a_{t-k}), ..., (s_{t-1}, a_{t-1}), (s_t, a_t)>$ is recorded. Parameter $k$ is the time horizon.
 3. Reward shaping model takes as an input the trajectory $T_p$ and outputs a reward augmentation $r_s$
-4. Final reward for the agent is 
-  $$
-    r = r_e + \lambda * r_s
-  $$
-where $\lambda$ is a shaping parameter determining how influential the shaping is.  
+4. Final reward for the agent is $ r = r_e + \lambda * r_s$ where $\lambda$ is a shaping parameter determining how influential the shaping is.  
   
   
 ### Trajectory Feedback   
@@ -105,7 +101,9 @@ Environment reward:
 
 Under this reward, agent learns to turn in place, thus keeping cummulative reward at 0. 
 
-For initial experiment, a trajectory where agent makes 4 turns is marked as undesirable
+For initial experiment, a trajectory where agent makes 4 turns is marked as undesirable.
+  
+Outcome-based feedback was implemented and change in position and orientation have been marked as important features. 
 
 **Result:** action distribution through successful episodes before vs after reward shaping:
   
@@ -118,10 +116,18 @@ For initial experiment, a trajectory where agent makes 4 turns is marked as unde
 
 Environment reward:
 * Lane changes not penalized
+  
+Agent trained only on environment's reward will not hesitate to change lanes.
+  
+For initial experiment, trajectories where agent has changed a lane have been marked as undesirable.
+  
+Outcome-based feedback was used and change in y position of the vehicle has been marked as an important feature. (Only lane changes which end up in different lane were marked)
+  
+**Results** distribution of agents y-axis position before vs. after reward shaping:
 
  <p align="center"> 
   <img src="img/before_highway.png" width="480" class="center">
-   <img src="img/after_highway.png" width="480" class="center">
+  <img src="img/after_highway.png" width="480" class="center">
 <p>
 
 ### Inventory Environment
