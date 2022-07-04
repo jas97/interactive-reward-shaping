@@ -1,6 +1,8 @@
 import gym
-from stable_baselines3 import DQN, DDPG
-import highway_env
+from stable_baselines3 import DQN
+
+from src.feedback.feedback_processing import present_successful_traj
+from src.visualization.visualization import visualize_feature
 
 
 def main():
@@ -20,22 +22,16 @@ def main():
                 gamma=0.8,
                 train_freq=1,
                 gradient_steps=1,
+                seed=1,
                 verbose=1)
 
-    #model.learn(int(2e4))
-    #model.save(model_path)
+    model.learn(int(2e4))
+    model.save(model_path)
 
     model = DQN.load(model_path, env=env)
 
-    for i in range(10):
-        done = False
-        obs = env.reset()
-        while not done:
-            action, _states = model.predict(obs, deterministic=True)
-            print('Obs: {}'.format(obs[0]))
-            print('Action: {}'.format(action))
-            obs, reward, done, info = env.step(action)
-            env.render()
+    best_traj = present_successful_traj(model, env)
+    visualize_feature(best_traj, 2, plot_actions=False, title='Only environment reward function')
 
 
 if __name__ == '__main__':

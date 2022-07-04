@@ -26,7 +26,7 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
         done = False
         obs = env.reset()
         while not done:
-            action = env.action_space.sample()
+            action = np.random.randint(0, env.action_space.n, size=(1,)).item()
             past = env.episode
             curr = 1
             for j in range(len(past)-1, -1, -1):
@@ -59,6 +59,6 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
     print('Generated {} env samples for state_diff'.format(len(D)))
 
     action_dataset = TensorDataset(A, y_A)
-    print('Generated {} env samples for state_diff'.format(len(A)))
+    print('Generated {} env samples for action'.format(len(A)))
 
     return state_diff_dataset, action_dataset

@@ -1,13 +1,16 @@
 from stable_baselines3 import DQN
 
-from src.envs.custom.inventory import Inventory
+from src.envs.custom.gridworld import Gridworld
 from src.feedback.feedback_processing import present_successful_traj
 from src.visualization.visualization import visualize_feature
 
 
 def main():
-    env = Inventory(time_window=5)
-    model_path = "trained_models/inventory"
+    env = Gridworld(time_window=5)
+
+    env.reset()
+
+    model_path = "trained_models/gridworld"
 
     model = DQN('MlpPolicy', env,
                 policy_kwargs=dict(net_arch=[256, 256]),
@@ -18,17 +21,17 @@ def main():
                 gamma=0.8,
                 train_freq=1,
                 gradient_steps=1,
+                exploration_fraction=0.8,
                 seed=1,
                 verbose=1)
 
-    model = DQN.load(model_path, env=env)
-
-    model.learn(int(2e4))
+    model.learn(int(1e5))
     model.save(model_path)
 
-    best_traj = present_successful_traj(model, env)
-    visualize_feature(best_traj, 0, plot_actions=True, title='Only environment reward function')
+    model = DQN.load(model_path, env=env)
 
+    best_traj = present_successful_traj(model, env)
+    visualize_feature(best_traj, 4, plot_actions=True, title='Only environment reward function')
 
 if __name__ == '__main__':
     main()

@@ -35,7 +35,7 @@ class Task:
             print('Iteration = {}'.format(iteration))
             try:
                 model_path = self.model_path + '_{}'.format(iteration-1)
-                model = DQN.load(model_path, verbose=1, env=self.env)
+                model = DQN.load(model_path, verbose=1, seed=1, env=self.env)
                 print('Loaded saved model')
 
                 # if it's not the first iteration reward model should be used

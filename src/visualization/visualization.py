@@ -10,6 +10,8 @@ def visualize_feature(traj, feature_id, plot_actions=False, title=''):
         plt.plot(f_vals)
 
     plt.title(title)
+    plt.xlabel('Time step')
+    plt.ylabel('Agent\'s lane')
 
     plt.show()
 
@@ -22,6 +24,7 @@ def visualize_feature(traj, feature_id, plot_actions=False, title=''):
         for a_vals in actions:
             plt.plot(a_vals)
 
-        plt.title('Action distribution over episodes')
-
+        plt.title('Action distribution through an episode accross succeful trajectories')
+        plt.xlabel('Time step')
+        plt.ylabel('Action')
         plt.show()

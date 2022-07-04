@@ -55,7 +55,7 @@ def get_ep_traj(model, env):
     total_rew = 0.0
 
     while not done:
-        action, _ = model.predict(obs)  # TODO: deterministic has to be True for highway
+        action, _ = model.predict(obs, deterministic=True)
         traj.append((obs, action))
 
         obs, rew, done, _ = env.step(action)
@@ -66,17 +66,8 @@ def get_ep_traj(model, env):
 
 def gather_feedback(best_traj):
     print('Gathering user feedback')
-    # TODO: loop for more feedback
     done = False
     feedback = []
-
-    # feedback = [('actions', [([8], 42), ([10], 41), ([0], 40), ([0], 37), ([9], 41)], -1, [0], 5),
-    #             ('actions', [([6], 27), ([0], 29), ([0], 28), ([10], 27), ([3], 27)], -1, [0], 5),
-    #             ('actions', [([1], 42), ([0], 39), ([8], 43), ([0], 25), ([3], 43)], -1, [0], 5),
-    #             ('actions', [([8], 85), ([8], 0), ([8], 0), ([8], 0), ([8], 94)], +1, [0], 5),
-    #             ('actions', [([8], 0), ([8], 0), ([8], 93), ([8], 0), ([8], 0)], +1, [0], 5)]
-    #
-    # return feedback
 
     while not done:
         print('Input feedback type (state_diff, actions or feature)')

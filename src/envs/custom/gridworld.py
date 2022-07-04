@@ -19,7 +19,7 @@ class Gridworld(gym.Env):
 
         self.step_pen = -1
         self.turn_pen = 0
-        self.goal_rew = 10
+        self.goal_rew = 1
         self.shaping = shaping
 
         self.max_steps = 50
@@ -68,7 +68,6 @@ class Gridworld(gym.Env):
         agent_x, agent_y, goal_x, goal_y, orient = state
 
         if (agent_x == goal_x) and (agent_y == goal_y):
-            print('Solved!')
             return True
 
         return False
