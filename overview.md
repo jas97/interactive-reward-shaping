@@ -16,7 +16,7 @@
 ## Related Work
 
 ### Human-in-the-Loop RL
-* User gives feedback on presented <state, action> pairs
+* User gives feedback on presented *<state, action>* pairs
 * Feedback can be:
   * Binary (good/bad action in the state)
   * Explanation-augmented (good/bad action + explanation, e.g. saliency maps)
@@ -64,9 +64,9 @@ WHILE True:\
 * In what form should human feedback be collected and how should it be integrated in updating the reward model?
 * If user marks a behavior $<(s_1, a_1), ..., (s_k, a_k)>$ that should be penalized:
   * **State-based:** 
-    * Arriving in s_k from s_1 should be penalized (e.g. arriving in another lane)
+    * Arriving in $s_k$ from $s_1$ should be penalized (e.g. arriving in another lane)
     * **Initial solution**: 
-      * **Trajectory encoding**: $[s_1 + \delta(s_k, s_1)]$ to capture the difference between starting and ending state. 
+      * **Trajectory encoding**: $[s_1 + \Delta(s_k, s_1)]$ to capture the difference between starting and ending state. 
       * **Explanation**: offered as a set of important features
       * **Data augmentation**: augmented samples are obtained from the feedback trajectory by randomizing unimportant features.
   * **Action-based** 
