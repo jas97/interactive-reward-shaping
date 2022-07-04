@@ -44,7 +44,7 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
             obs, rew, done, _ = env.step(action)
 
     D = torch.tensor(np.array(D))
-    D = torch.unique(D, dim=0)  # remove duplicates
+    #D = torch.unique(D, dim=0)  # remove duplicates
 
     A = torch.tensor(np.array(A))
     A = torch.unique(A, dim=0)
