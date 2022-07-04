@@ -105,7 +105,7 @@ For initial experiment, a trajectory where agent makes 4 turns is marked as unde
   
 Outcome-based feedback was implemented and change in position and orientation have been marked as important features. 
 
-**Result:** action distribution through successful episodes before vs after reward shaping:
+**Results:** action distribution through successful episodes before vs after reward shaping:
   
 <p align="center"> 
    <img src="img/before_gridworld.png" width="480" class="center">
@@ -148,7 +148,7 @@ Optimal policy would prefer to order less often, but in bigger batches.
 
 * For initial experiment, 5-step trajectories where agent orders 20 - 40 items are marked as undesirable.
 * Action-based feedback 
-* Action distribution before reward shaping vs. after reward shaping:
+* **Results**: Action distribution before reward shaping vs. after reward shaping:
   
 <p align="center"> 
    <img src="img/before_inventory.png" width="480" class="center">
