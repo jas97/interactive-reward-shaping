@@ -60,7 +60,7 @@ class Task:
 
             # visualize features and/or actions
             title = 'Before reward shaping' if iteration == 1 else 'After reward shaping'
-            visualize_feature(best_traj, 0, plot_actions=True, title=title)  # TODO: remove hardcoding
+            visualize_feature(best_traj, 2, plot_actions=True, title=title)  # TODO: remove hardcoding
 
             if iteration == 2:  # so far for initial experiments
                 break

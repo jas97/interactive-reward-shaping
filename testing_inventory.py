@@ -18,12 +18,11 @@ def main():
                 gamma=0.8,
                 train_freq=1,
                 gradient_steps=1,
+                exploration_fraction=0.5,
                 seed=1,
                 verbose=1)
 
-    model = DQN.load(model_path, env=env)
-
-    model.learn(int(2e4))
+    model.learn(int(1e5))
     model.save(model_path)
 
     best_traj = present_successful_traj(model, env)

@@ -31,7 +31,7 @@ def main():
     if task_name == 'gridworld':
         env = Gridworld(**env_config)
     elif task_name == 'highway':
-        env = CustomHighwayEnv(env_config['time_window'])
+        env = CustomHighwayEnv(shaping=False, time_window=env_config['time_window'])
         env.config['right_lane_reward'] = env_config['right_lane_reward']
         env.config['lanes_count'] = env_config['lanes_count']
         env.reset()
