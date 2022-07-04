@@ -19,16 +19,17 @@ class InventoryEnv(gym.Env, utils.EzPickle):
     https://sites.ualberta.ca/~szepesva/RLBook.html
     """
 
-    def __init__(self, n=100, k=5, c=2, h=2, p=3, lam=8):
+    def __init__(self, n=100, item_cost=-1, item_sale=2, hold_cost=0, loss_cost=-1, delivery_cost=0, lam=30):
         self.n = n
         self.action_space = spaces.Discrete(n)
         self.observation_space = spaces.Box(0, n + 1, (1, ), dtype=np.int)
         self.max = n
         self.state = n
-        self.k = k
-        self.c = c
-        self.h = h
-        self.p = p
+        self.item_cost = item_cost
+        self.item_sale = item_sale
+        self.hold_cost = hold_cost
+        self.loss_cost = loss_cost
+        self.delivery_cost = delivery_cost
         self.lam = lam
 
         # Set seed
@@ -38,7 +39,6 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         self.reset()
 
         self.max_timesteps = 20
-
 
     def demand(self):
         return np.random.poisson(self.lam)
@@ -50,12 +50,16 @@ class InventoryEnv(gym.Env, utils.EzPickle):
 
     def reward(self, x, a, y):
         x = x.item()
-        k = self.k
         m = self.max
-        c = self.c
-        h = self.h
-        p = self.p
-        r = -k * (a > 0) - c * max(min(x + a, m) - x, 0) - h * x + p * max(min(x + a, m) - y, 0)
+
+        # item ordering fee + sale reward + holding fee + loss if not enough to satisfy demand
+        new_x = min(x + a, m)
+        r = a * self.item_cost + \
+            min(y, new_x) * self.item_sale + \
+            max(new_x - y, 0) * self.hold_cost +\
+            max(y - new_x, 0) * self.loss_cost + \
+            (a > 0) * self.delivery_cost
+
         return r
 
     def seed(self, seed=None):
@@ -64,14 +68,13 @@ class InventoryEnv(gym.Env, utils.EzPickle):
 
     def step(self, action):
         assert self.action_space.contains(action)
-        obs = self.state
+        obs = self.state[0]
         demand = self.demand()
-        print('Demand {}'.format(demand))
 
         obs2 = self.transition(obs, action, demand)
         self.state = obs2
 
-        reward = self.reward(obs, action, obs2)
+        reward = self.reward(obs, action, demand)
 
         done = self.steps >= self.max_timesteps
         self.steps += 1

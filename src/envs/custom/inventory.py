@@ -2,21 +2,24 @@ import numpy as np
 
 from src.envs.original.gym_inventory.inventory_env import InventoryEnv
 
+#TODO: create abstract class to define all necessary methods
+from src.feedback.feedback_processing import FeedbackTypes
+
 
 class Inventory(InventoryEnv):
 
-    def __init__(self, shaping=False, time_window=5):
+    def __init__(self, time_window, shaping=False):
         super().__init__()
-        self.world_dim = 5
         self.shaping = shaping
         self.time_window = time_window
 
         self.episode = []
 
-        self.lows = np.zeros((25, 0))
-        self.highs = np.ones((25, 0))
+        self.lows = np.zeros((1, 0))
+        self.highs = np.ones((1, 0))
+        self.highs.fill(100)
 
-        self.lmbda = -0.1
+        self.lmbda = 1
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
@@ -26,7 +29,6 @@ class Inventory(InventoryEnv):
         self.state = np.array([self.state]).flatten()
 
         if self.shaping:
-            print('Shaping')
             rew += self.lmbda * self.augment_reward(action, self.state.flatten())
 
         info['true_rew'] = rew
@@ -52,10 +54,21 @@ class Inventory(InventoryEnv):
             s, a = past[j]
             if curr >= self.time_window:
                 break
-            state_enc = np.array(list(s) + list(s - state) + [curr])
 
-            rew = self.reward_model.predict(state_enc)
-            running_rew += rew.item()
+            state_enc = self.encode_diff(s, state, curr)
+            action_enc = self.encode_actions(action, past)
+
+            try:
+                state_rew = self.reward_model.predict(state_enc, FeedbackTypes.STATE_DIFF).item()
+            except ValueError:
+                state_rew = 0.0
+
+            try:
+                action_rew = self.reward_model.predict(action_enc, FeedbackTypes.ACTIONS).item()
+            except ValueError:
+                action_rew = 0.0
+
+            running_rew += self.lmbda*state_rew + self.lmbda*action_rew
 
         return running_rew
 
@@ -64,3 +77,25 @@ class Inventory(InventoryEnv):
 
     def set_shaping(self, boolean):
         self.shaping = boolean
+
+    def encode_diff(self, start, end, timesteps):
+        state_enc = np.array(list(start) + list(start - end) + [timesteps])
+        return state_enc
+
+    def encode_actions(self, action, past):
+        enc = [self.action_space.n] * self.time_window
+
+        i = 0
+        for el in past:
+            if i >= self.time_window:
+                break
+            enc[i] = el[1]
+            i += 1
+
+        if i < self.time_window:
+            enc[i] = action
+
+        return np.array(enc)
+
+    def render_state(self, state):
+        print(state)

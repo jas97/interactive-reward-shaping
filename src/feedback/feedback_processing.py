@@ -70,6 +70,14 @@ def gather_feedback(best_traj):
     done = False
     feedback = []
 
+    # feedback = [('actions', [([8], 42), ([10], 41), ([0], 40), ([0], 37), ([9], 41)], -1, [0], 5),
+    #             ('actions', [([6], 27), ([0], 29), ([0], 28), ([10], 27), ([3], 27)], -1, [0], 5),
+    #             ('actions', [([1], 42), ([0], 39), ([8], 43), ([0], 25), ([3], 43)], -1, [0], 5),
+    #             ('actions', [([8], 85), ([8], 0), ([8], 0), ([8], 0), ([8], 94)], +1, [0], 5),
+    #             ('actions', [([8], 0), ([8], 0), ([8], 93), ([8], 0), ([8], 0)], +1, [0], 5)]
+    #
+    # return feedback
+
     while not done:
         print('Input feedback type (state_diff, actions or feature)')
         feedback_type = input()
@@ -79,6 +87,8 @@ def gather_feedback(best_traj):
         start_timestep = int(input())
         print('Enter ending timestep:')
         end_timestep = int(input())
+        print('Enter feedback:')
+        feedback_signal = int(input())
 
         f = best_traj[traj_id][start_timestep:(end_timestep + 1)]  # for inclusivity + 1
 
@@ -88,7 +98,7 @@ def gather_feedback(best_traj):
         important_features = input()
         important_features = [int(x) for x in important_features.split(' ')]
 
-        feedback.append((feedback_type, f, important_features, timesteps))
+        feedback.append((feedback_type, f, feedback_signal, important_features, timesteps))
 
         print('Enter another trajectory (y/n?)')
         cont = input()
@@ -100,7 +110,7 @@ def gather_feedback(best_traj):
     return feedback
 
 
-def augment_feedback_diff(traj, important_features, timesteps, env, time_window=5, datatype='int', length=100):
+def augment_feedback_diff(traj, signal,important_features, timesteps, env, time_window=5, datatype='int', length=100):
     print('Augmenting feedback...')
     start_state = traj[0][0]
     end_state = traj[-1][0]
@@ -147,7 +157,7 @@ def augment_feedback_diff(traj, important_features, timesteps, env, time_window=
     D = torch.unique(D, dim=0)
 
     y = np.zeros((len(D),))
-    y.fill(-1)
+    y.fill(signal)
     y = torch.tensor(y)
 
     dataset = TensorDataset(D, y)
@@ -156,19 +166,34 @@ def augment_feedback_diff(traj, important_features, timesteps, env, time_window=
     return dataset
 
 
-def augment_feedback_actions(feedback_traj, env, length=2000, threshold=0.2):
+def augment_feedback_actions(feedback_traj, signal, env, length=2000, threshold=1):
     actions = [a for (s, a) in feedback_traj]
     traj_len = len(actions)
     max_action = env.action_space.n
 
-    # generate random sequences of actions
-    random_traj = np.random.randint(0, max_action, size=(length*100, traj_len))
+    # generate neighbourhood of sequences of actions
+    # TODO: different options for generating neighborhood
+    random_traj = np.tile(actions, (length*100, 1))
+
+    random_traj = np.round(random_traj + np.random.normal(0, 5, size=(length*100, traj_len)))
+    random_traj[random_traj<0] = 0
+
+    # TODO: normalize actions and random_traj instead of increasing the threshold
 
     # find similarities to the original trajectory actions using dynamic time warping
     sims = [dtw(actions, traj, keep_internals=True).normalizedDistance for traj in random_traj]
 
     # filter out only the most similar trajectories
-    boolean_sim = np.array(sims) > threshold
+    boolean_sim = np.array(sims) < threshold
     filtered_traj = random_traj[boolean_sim]
 
-    return filtered_traj
+    D = torch.tensor(filtered_traj)
+    D = torch.unique(D, dim=0)
+
+    y = np.zeros((len(D),))
+    y.fill(signal)
+    y = torch.tensor(y)
+
+    dataset = TensorDataset(D, y)
+
+    return dataset

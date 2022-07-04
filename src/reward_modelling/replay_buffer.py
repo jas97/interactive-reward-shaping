@@ -16,25 +16,22 @@ class ReplayBuffer:
         self.actions = action_dataset
         self.feature = dataset
 
-        self.original_data = self.state_diff.tensors[0]
-
-    def update(self, new_data, important_features, datatype, feedback_type=FeedbackTypes.STATE_DIFF):
+    def update(self, new_data, signal, important_features, datatype, feedback_type=FeedbackTypes.STATE_DIFF):
         print('Updating reward buffer...')
 
         if feedback_type == FeedbackTypes.STATE_DIFF:
             full_dataset = torch.cat([self.state_diff.tensors[0], new_data.tensors[0]])
+            curr_dataset = self.state_diff
         elif feedback_type == FeedbackTypes.ACTIONS:
             full_dataset = torch.cat([self.actions.tensors[0], new_data.tensors[0]])
+            curr_dataset = self.actions
         elif feedback_type == FeedbackTypes.FEATURE:
             full_dataset = torch.cat([self.feature.tensors[0], new_data.tensors[0]])
+            curr_dataset = self.feature
 
-        # unique_dataset = torch.unique(full_dataset, dim=0)
-
-        # every sample similar to new data in important features should be labelled as -1
-        # y = [0 if len(torch.where((x == self.original_data).all(dim=1))[0]) else -1 for x in unique_dataset]
         # TODO: separate for feedback types
-        y = torch.cat([self.state_diff.tensors[1], new_data.tensors[1]])
-        y = [-1 if self.similar_to_data(new_data.tensors[0], full_dataset[i], important_features, datatype, feedback_type) else l for i, l in enumerate(y)]
+        y = torch.cat([curr_dataset.tensors[1], new_data.tensors[1]])
+        y = [signal if self.similar_to_data(new_data.tensors[0], full_dataset[i], important_features, datatype, feedback_type) else l for i, l in enumerate(y)]
         y = torch.tensor(y)
 
         if feedback_type == FeedbackTypes.STATE_DIFF:
@@ -56,6 +53,8 @@ class ReplayBuffer:
                 similarity = abs(mean_features[important_features] - x[important_features])
 
                 return similarity < threshold
+        elif feedback_type == FeedbackTypes.ACTIONS:
+            return 0
 
     def get_data_loader(self, feedback_type=FeedbackTypes.STATE_DIFF):
         if feedback_type == FeedbackTypes.STATE_DIFF:
@@ -68,7 +67,7 @@ class ReplayBuffer:
     def get_dataset(self, feedback_type=FeedbackTypes.STATE_DIFF):
         if feedback_type == FeedbackTypes.STATE_DIFF:
             return self.state_diff
-        elif feedback_type == FeedbackTypes.STATE_DIFF:
+        elif feedback_type == FeedbackTypes.ACTIONS:
             return self.actions
-        elif feedback_type == FeedbackTypes.STATE_DIFF:
+        elif feedback_type == FeedbackTypes.ACTIONS:
             return self.feature

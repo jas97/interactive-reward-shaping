@@ -6,7 +6,7 @@ import numpy as np
 
 class Gridworld(gym.Env):
 
-    def __init__(self, shaping=False, time_window=5):
+    def __init__(self, time_window, shaping=False):
         self.world_dim = 5
         self.time_window = time_window
 

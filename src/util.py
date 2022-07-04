@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -30,6 +31,14 @@ def evaluate_policy(model, env, verbose=False, n_ep=100):
         rews.append(ep_rew)
 
     return np.mean(rews)
+
+
+def load_config(config_path):
+    with open(config_path) as f:
+        data = json.loads(f.read())
+
+    return data
+
 
 def seed_everything(seed=1):
     seed_value = seed

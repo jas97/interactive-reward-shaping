@@ -88,7 +88,6 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
         i = 0
         for el in past:
-            print(past)
             enc[i] = el[1]
             i += 1
 

@@ -35,8 +35,8 @@ class RewardModel:
 
         print('Trained with random forest on {} samples. Mean squared error: {}'.format(X.shape[0], mse))
 
-    def update_buffer(self, D, important_features, datatype, feedback_type):
-        self.buffer.update(D, important_features, datatype, feedback_type)
+    def update_buffer(self, D, signal, important_features, datatype, feedback_type):
+        self.buffer.update(D, signal, important_features, datatype, feedback_type)
 
     def predict(self, encoding, feedback_type=FeedbackTypes.STATE_DIFF):
         if feedback_type is FeedbackTypes.STATE_DIFF:

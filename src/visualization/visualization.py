@@ -22,4 +22,6 @@ def visualize_feature(traj, feature_id, plot_actions=False, title=''):
         for a_vals in actions:
             plt.plot(a_vals)
 
+        plt.title('Action distribution over episodes')
+
         plt.show()

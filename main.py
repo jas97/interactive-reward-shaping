@@ -1,7 +1,8 @@
 from src.envs.custom.gridworld import Gridworld
 from src.envs.custom.highway import CustomHighwayEnv
+from src.envs.custom.inventory import Inventory
 from src.tasks.task import Task
-from src.util import seed_everything
+from src.util import seed_everything, load_config
 import argparse
 
 
@@ -16,21 +17,28 @@ def main():
 
     print('Task = {}'.format(task_name))
 
+    # Define paths
     model_path = 'trained_models/{}'.format(task_name)
+    env_config_path = 'config/env/{}.json'.format(task_name)
+    model_config_path = 'config/model/{}.json'.format(task_name)
+    task_config_path = 'config/task/{}.json'.format(task_name)
+
+    # Load configs
+    env_config = load_config(env_config_path)
+    model_config = load_config(model_config_path)
+    task_config = load_config(task_config_path)
 
     if task_name == 'gridworld':
-        feedback_freq = int(15000)
-        time_window = 5
-        env = Gridworld(time_window=time_window)
-    if task_name == 'highway':
-        feedback_freq = int(2e4)
-        time_window = 5
-        env = CustomHighwayEnv(time_window=5)
-        env.config['lanes_count'] = 4
-        env.config['right_lane_reward'] = 0
+        env = Gridworld(**env_config)
+    elif task_name == 'highway':
+        env = CustomHighwayEnv(env_config['time_window'])
+        env.config['right_lane_reward'] = env_config['right_lane_reward']
+        env.config['lanes_count'] = env_config['lanes_count']
         env.reset()
+    elif task_name == 'inventory':
+        env = Inventory(**env_config)
 
-    task = Task(env, model_path, time_window, feedback_freq=feedback_freq, task_name=task_name)
+    task = Task(env, model_path, task_name, model_config, env_config['time_window'], **task_config)
     task.run()
 
 
