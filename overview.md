@@ -25,6 +25,17 @@
 
 ## Approach
 
+Input: 
+ * Environment $E$
+ * Policy model $M$ (e.g. DQN)
+ * Reward shaping model $R_{s}$
+
+Output:
+ * Policy $\pi_s$ consistent with user feedback
+
+WHILE True:
+  
+
 ### Algorithm
 
 ![](img/alg_flow.png)
@@ -59,6 +70,11 @@ Environment reward:
 ![](img/before_highway.png)  ![](img/after_highway.png)
 
 ### Inventory Environment
+
+Environment reward:
+* Cost for buying items
+* Profit for selling
+* Cost for not satisfying demand
 
 ### Limitations
 
