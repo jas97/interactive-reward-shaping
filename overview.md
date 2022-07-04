@@ -96,7 +96,7 @@ Under this reward, agent learns to turn in place, thus keeping cummulative rewar
 
 For initial experiment, a trajectory where agent makes 4 turns is marked as undesirable
 
-Result: action distribution through successful episodes before vs after reward shaping:
+**Result:** action distribution through successful episodes before vs after reward shaping:
 
 ![](img/before_gridworld.png) ![](img/after_gridworld.png)
 
@@ -105,7 +105,10 @@ Result: action distribution through successful episodes before vs after reward s
 Environment reward:
 * Lane changes not penalized
 
-![](img/before_highway.png)  ![](img/after_highway.png)
+ <p align="center"> 
+  <img src="img/before_highway.png" width="480" class="center">
+   <img src="img/after_highway.png" width="480" class="center">
+<p>
 
 ### Inventory Environment
 
