@@ -56,7 +56,7 @@ WHILE True:\
 
         update_reward_model$(R_s, B)$                                   \\\\ update reward model with feedback data
   
-<img src="img/alg_flow.png" width="48">
+<img src="img/alg_flow.png" width="480" class="center">
 
 ### Trajectory Feedback   
 
