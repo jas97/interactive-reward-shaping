@@ -187,5 +187,5 @@ Optimal policy would prefer to order less often, but in bigger batches.
   * How to learn reward shaping from augmented feedback?
   * How to integrate different feedback types (e.g. outcome and action-based)?
   * **Initial solution**: 
-    * Linear reward shaping, at each step agent gets $\lambda * additional_reward$ added to original environment reward. additional_reward is predicted by $R_s$ for the agent's trajectory ending in current state
+    * Linear reward shaping, at each step agent gets $\lambda * r_s$ added to original environment reward. r_s is predicted by $R_s$ for the agent's trajectory ending in current state
     * Using one feedback type per task.
