@@ -61,6 +61,15 @@ WHILE True:\
   <img src="img/alg_flow.png" width="600" class="center">
 <p>
   
+At the beginning, only environment's reward is available and reward shaping model $R_s$ is initialized to assign 0 to each passed trajectory.
+
+At each iteration, policy is trained for a set number of time steps using both environment's reward and reward shaping provided by $R_s$. 
+  
+Then agent provides a summary of its policy, and user can mark trajectories that are undesirable. User can also specify a type of feedback (e.g. outcome or action-based) and provide explanation for their decision (at the moment in the form of important features for outcome-based feedback). 
+  
+A dataset of trajectories similar to the one user marked are generated using the provided explanation (at the moment by randomizing unimportant features). 
+  
+The augmented dataset is then used to learn a supervised learning model to distinguish between undesirable and unmarked trajectories. The supervised learning model takes as an input an encoding of a trajectory and outputs a reward (at the moment 0 or -1). 
   
 During training (train($M, E, R_s$)), reward shaping model is used to augment the environment's reward function in the following way:
 1. At timestep $t$ agent receives environment reward $r_e(s_t, a_t)$ 
