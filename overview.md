@@ -198,3 +198,6 @@ Optimal policy would prefer to order less often, but in bigger batches.
   * **Initial solution**: 
     * Linear reward shaping, at each step agent gets $\lambda * r_s$ added to original environment reward. r_s is predicted by $R_s$ for the agent's trajectory ending in current state
     * Using one feedback type per task. 
+* **Evaluation**
+  * How many iterations should be performed? When can we stop the training? 
+  * How to measure the performance of reward shaping?
