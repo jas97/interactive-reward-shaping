@@ -177,7 +177,11 @@ Optimal policy would prefer to order less often, but in bigger batches.
   
 ## Proposed Next Steps
  * Uniting all feedback types into one reward shaping model
+ * Inverse RL can use augmented trajectories to learn reward shaping signal that can be applied to each <state, action> pair in further training
 
+<p align="center"> 
+   <img src="img/IRL_approach.png" width="600" class="center">
+<p>
 
 ## Open Questions
 
