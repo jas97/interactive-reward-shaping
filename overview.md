@@ -173,6 +173,11 @@ Optimal policy would prefer to order less often, but in bigger batches.
 * Only one feedback type per task
 * For action feedback, fixed time window
 * Naive generation of neighbourhood of a sequence of actions
+  
+  
+## Proposed Next Steps
+ * Uniting all feedback types into one reward shaping model
+
 
 ## Open Questions
 
