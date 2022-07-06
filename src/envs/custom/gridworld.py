@@ -128,12 +128,12 @@ class Gridworld(gym.Env):
         pass
 
     def render(self):
-        self.render_state(self.state, self.steps)
+        self.render_state(self.state)
 
-    def render_state(self, state, steps=0):
+    def render_state(self, state):
         agent_x, agent_y, goal_x, goal_y, orient = state
         rendering = '---------------\n'
-        rendering += 'Step = {} State = {}\n'.format(steps, state)
+        rendering += 'State = {}\n'.format(state)
 
         for j in range(self.world_dim):
             row = ''

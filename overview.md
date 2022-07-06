@@ -119,8 +119,8 @@ Outcome-based feedback was implemented and change in position and orientation ha
 State = [agent's x coordinate, agent's y coordinate, goal's x coordinate, goal's y coordinate, orientation]
 
 <p align="center"> 
-   <img src="img/gridworld_trajectory_1.png" width="480" class="center">
-   <img src="img/gridworld_trajectory_2.png" width="480" class="center">
+   <img src="img/gridworld_trajectory_1.png" width="300" class="center">
+   <img src="img/gridworld_trajectory_2.png" width="300" class="center">
 <p>
 
 **Results:** action distribution through successful episodes before vs after reward shaping:

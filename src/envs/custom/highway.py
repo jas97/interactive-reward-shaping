@@ -44,7 +44,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         super().render()
 
     def render_state(self, state):
-        print(state.flatten()[0:5])
+        print('State = {}'.format(state.flatten()[0:5]))
 
     def augment_reward(self, action, state):
         running_rew = 0
