@@ -146,7 +146,7 @@ Outcome-based feedback was used and change in y position of the vehicle has been
 State = [presence (always 1), x location, y location, x speed, y speed]
 
 <p align="center"> 
-  <img src="" width="480" class="center">
+  <img src="img/highway_trajectory.png" width="300" class="center">
 <p>
 
 **Results** distribution of agents y-axis position before vs. after reward shaping:
@@ -180,7 +180,7 @@ Optimal policy would prefer to order less often, but in bigger batches.
 State = [inventory]
 
 <p align="center"> 
-   <img src="img/inventory_trajectory.png" width="480" class="center">
+   <img src="img/inventory_trajectory.png" width="300" class="center">
 <p>
 
 * **Results**: Action distribution before reward shaping vs. after reward shaping:
