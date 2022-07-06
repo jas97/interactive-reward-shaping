@@ -144,12 +144,8 @@ Outcome-based feedback was used and change in y position of the vehicle has been
 
 **Trajectory examples**: 
 
-State = [presence (always 1), x location, y location, x speed, y speed]
-Actions: 0: 'LANE_LEFT',\
-         1: 'IDLE',\
-         2: 'LANE_RIGHT',\
-         3: 'FASTER',\
-         4: 'SLOWER'
+State = [presence (always 1), x location, y location, x speed, y speed]\
+Actions: 0: LANE_LEFT, 1: IDLE, 2: LANE_RIGHT, 3: FASTER, 4: SLOWER
 
 <p align="center"> 
   <img src="img/highway_trajectory.png" width="300" class="center">
