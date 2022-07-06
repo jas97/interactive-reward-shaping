@@ -203,5 +203,6 @@ Optimal policy would prefer to order less often, but in bigger batches.
   * How to integrade different feedback types (e.g. outcome and action-based)?
   * **Initial solution:** only negative feedback is considered and only one feedback pere task
 * **Evaluation**
+  * What are the baselines?
   * How many iterations should be performed? When can we stop the training? 
   * How to measure the performance of reward shaping?
