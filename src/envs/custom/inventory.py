@@ -98,4 +98,4 @@ class Inventory(InventoryEnv):
         return np.array(enc)
 
     def render_state(self, state):
-        print(state)
+        print('Inventory: {}'.format(state))

@@ -114,6 +114,15 @@ For initial experiment, a trajectory where agent makes 4 turns is marked as unde
   
 Outcome-based feedback was implemented and change in position and orientation have been marked as important features. 
 
+**Trajectory examples:**
+
+State = [agent's x coordinate, agent's y coordinate, goal's x coordinate, goal's y coordinate, orientation]
+
+<p align="center"> 
+   <img src="img/gridworld_trajectory_1.png" width="480" class="center">
+   <img src="img/gridworld_trajectory_2.png" width="480" class="center">
+<p>
+
 **Results:** action distribution through successful episodes before vs after reward shaping:
   
 <p align="center"> 
@@ -131,7 +140,15 @@ Agent trained only on environment's reward will not hesitate to change lanes.
 For initial experiment, trajectories where agent has changed a lane have been marked as undesirable.
   
 Outcome-based feedback was used and change in y position of the vehicle has been marked as an important feature. (Only lane changes which end up in different lane were marked)
-  
+
+**Trajectory examples**: 
+
+State = [presence (always 1), x location, y location, x speed, y speed]
+
+<p align="center"> 
+  <img src="" width="480" class="center">
+<p>
+
 **Results** distribution of agents y-axis position before vs. after reward shaping:
 
  <p align="center"> 
@@ -157,6 +174,15 @@ Optimal policy would prefer to order less often, but in bigger batches.
 
 * For initial experiment, 5-step trajectories where agent orders 20 - 40 items are marked as undesirable.
 * Action-based feedback 
+
+**Trajectory example:**:
+
+State = [inventory]
+
+<p align="center"> 
+   <img src="img/inventory_trajectory.png" width="480" class="center">
+<p>
+
 * **Results**: Action distribution before reward shaping vs. after reward shaping:
   
 <p align="center"> 
