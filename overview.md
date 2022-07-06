@@ -119,8 +119,8 @@ Outcome-based feedback was implemented and change in position and orientation ha
 State = [agent's x coordinate, agent's y coordinate, goal's x coordinate, goal's y coordinate, orientation]
 
 <p align="center"> 
-   <img src="img/gridworld_trajectory_1.png" width="300" class="center">
-   <img src="img/gridworld_trajectory_2.png" width="300" class="center">
+   <img src="img/gridworld_trajectory_1.png" width="200" class="center">
+   <img src="img/gridworld_trajectory_2.png" width="200" class="center">
 <p>
 
 **Results:** action distribution through successful episodes before vs after reward shaping:
@@ -180,7 +180,7 @@ Optimal policy would prefer to order less often, but in bigger batches.
 State = [inventory]
 
 <p align="center"> 
-   <img src="img/inventory_trajectory.png" width="300" class="center">
+   <img src="img/inventory_trajectory.png" width="200" class="center">
 <p>
 
 * **Results**: Action distribution before reward shaping vs. after reward shaping:
