@@ -226,8 +226,10 @@ State = [inventory]
     * **Action-based feedback**: list of actions
 * **Heterodox feedback**:
   * How to integrate positive and negative feedback?
-  * How to integrade different feedback types (e.g. outcome and action-based)?
+  * How to integrate different feedback types (e.g. outcome and action-based)?
+  * How to integrate trajectory and state-based feedback? 
   * **Initial solution:** only negative feedback is considered and only one feedback pere task
 * **Evaluation**
+  * What are the baselines?
   * How many iterations should be performed? When can we stop the training? 
   * How to measure the performance of reward shaping?
