@@ -116,7 +116,7 @@ Outcome-based feedback was implemented and change in position and orientation ha
 
 **Trajectory examples:**
 
-State = [agent's x coordinate, agent's y coordinate, goal's x coordinate, goal's y coordinate, orientation]
+State = [agent's x coordinate, agent's y coordinate, goal's x coordinate, goal's y coordinate, orientation]\
 Actions: 0 - move, 1 - turn
 
 <p align="center"> 
@@ -179,7 +179,8 @@ Optimal policy would prefer to order less often, but in bigger batches.
 
 **Trajectory example:**:
 
-State = [inventory]
+State = [inventory]\
+Actions: order $\in [0, 100]$
 
 <p align="center"> 
    <img src="img/inventory_trajectory.png" width="200" class="center">
