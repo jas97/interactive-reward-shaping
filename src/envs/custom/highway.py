@@ -41,7 +41,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         pass
 
     def render(self):
-        super().render()
+        super().render(mode='human')
 
     def render_state(self, state):
         print('State = {}'.format(state.flatten()[0:5]))

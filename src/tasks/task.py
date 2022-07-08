@@ -1,12 +1,12 @@
+import numpy as np
 from stable_baselines3 import DQN
 
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, \
     augment_feedback_actions, augment_feedback_diff, FeedbackTypes
 from src.reward_modelling.reward_model import RewardModel
 from src.tasks.task_util import init_replay_buffer, check_dtype
-from src.util import evaluate_policy
-from src.visualization.visualization import visualize_feature
-
+from src.util import evaluate_policy, evaluate_MO
+from src.visualization.visualization import visualize_feature, visualize_rewards
 
 
 class Task:
@@ -30,6 +30,7 @@ class Task:
     def run(self):
         finished_training = False
         iteration = 1
+        reward_dict = {}
 
         while not finished_training:
             print('Iteration = {}'.format(iteration))
@@ -51,10 +52,6 @@ class Task:
             model.learn(total_timesteps=self.feedback_freq)
             model.save(self.model_path + '_{}'.format(iteration))
 
-            # evaluate partially trained model
-            mean_rew = evaluate_policy(model, self.env)
-            print('Training timesteps = {}. Mean reward = {}.'.format(self.feedback_freq * iteration, mean_rew))
-
             # print the best trajectories
             best_traj = present_successful_traj(model, self.env, n_traj=10)
 
@@ -62,7 +59,7 @@ class Task:
             title = 'Before reward shaping' if iteration == 1 else 'After reward shaping'
             visualize_feature(best_traj, 0, plot_actions=True, title=title)  # TODO: remove hardcoding
 
-            if iteration == 2:  # so far for initial experiments
+            if iteration == 20:  # so far for initial experiments
                 break
 
             # gather feedback trajectories
@@ -103,7 +100,21 @@ class Task:
                 self.reward_model.update(FeedbackTypes.STATE_DIFF)
             if action:
                 self.reward_model.update(FeedbackTypes.ACTIONS)
+
+            # evaluate different rewards
+        #     rew_values = evaluate_MO(model, self.env, n_episodes=100)
+        #     if iteration == 1:
+        #         reward_dict = rew_values
+        #     else:
+        #         reward_dict = {rn: reward_dict[rn] + rew_values[rn] for rn in rew_values.keys()}
+        #
             iteration += 1
+        #
+        # # visualize different rewards
+        # xticks = np.arange(0, self.feedback_freq*iteration, step=self.feedback_freq)
+        # visualize_rewards(reward_dict, title='Average reward objectives without reward shaping', xticks=xticks)
+
+
 
 
 

@@ -25,8 +25,6 @@ class Gridworld(gym.Env):
         self.max_steps = 50
         self.steps = 0
 
-        self.lmbda = 1  # for testing (should be [0, 1] otherwise)
-
         # keep record of the last episode
         self.episode = []
 
@@ -59,7 +57,10 @@ class Gridworld(gym.Env):
         self.state = new_state
         self.steps += 1
 
-        return new_state.flatten(), rew, done, {}
+        info = {}
+        info['rewards'] = {'total': rew}
+
+        return new_state.flatten(), rew, done, info
 
     def check_if_done(self, state):
         if self.steps >= self.max_steps:
@@ -85,7 +86,7 @@ class Gridworld(gym.Env):
             rew = self.turn_pen
 
         if self.shaping:
-            rew += self.lmbda * self.augment_reward(action, state)
+            rew += self.augment_reward(action, state)
 
         return rew
 

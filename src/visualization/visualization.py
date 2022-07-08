@@ -28,3 +28,19 @@ def visualize_feature(traj, feature_id, plot_actions=False, title=''):
         plt.xlabel('Time step')
         plt.ylabel('Action')
         plt.show()
+
+
+def visualize_rewards(rew_dict, title='', xticks=None):
+    for rew_name, rew_values in rew_dict.items():
+        plt.plot(rew_values, label=rew_name)
+
+    plt.legend(loc="upper left")
+    plt.title = title
+
+    if xticks is not None:
+        plt.xticks = xticks
+
+    plt.xlabel('Time steps')
+    plt.ylabel('Average reward')
+
+    plt.show()
