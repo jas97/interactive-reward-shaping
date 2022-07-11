@@ -1,8 +1,7 @@
 import numpy as np
 from stable_baselines3 import DQN
 
-from src.feedback.feedback_processing import present_successful_traj, gather_feedback, \
-    augment_feedback_actions, augment_feedback_diff, FeedbackTypes
+from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, FeedbackTypes
 from src.reward_modelling.reward_model import RewardModel
 from src.tasks.task_util import init_replay_buffer, check_dtype
 from src.util import evaluate_policy, evaluate_MO
@@ -22,7 +21,7 @@ class Task:
         self.reward_model = RewardModel(time_window)
 
         # initialize buffer of the reward model
-        self.reward_model.buffer.initialize(*init_replay_buffer(self.env, self.time_window))
+        self.reward_model.buffer.initialize(init_replay_buffer(self.env, self.time_window))
 
         # check the dtype of env state space
         self.datatype = check_dtype(self.env)
@@ -67,39 +66,37 @@ class Task:
             for f in feedback:
                 print('Feedback trajectory = {}. Important features = {}. '.format(f[0], f[1]))
 
-            state, action, feature = False, False, False
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
-                # augment feedback for each trajectory
-                if feedback_type == FeedbackTypes.STATE_DIFF.value:
-                    state = True
-                    feedback_type = FeedbackTypes.STATE_DIFF
+                actions = feedback_type == 'actions'
+                state_len = feedback_traj[0][0].flatten().shape[0]
+                traj_len = len(feedback_traj)
+                important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
+                important_features += [(traj_len+1)*state_len] # add timesteps as important
 
-                    D = augment_feedback_diff(feedback_traj,
-                                         signal,
-                                         important_features,
-                                         timesteps,
-                                         self.env,
-                                         time_window=self.time_window,
-                                         datatype=self.datatype,
-                                         length=1000)
-                elif feedback_type == FeedbackTypes.ACTIONS.value:
-                    feedback_type = FeedbackTypes.ACTIONS
-                    action = True
-                    D = augment_feedback_actions(feedback_traj, signal, self.env, length=1000)
+                if actions:
+                    important_features += list(np.arange(traj_len * state_len, traj_len * state_len + traj_len))
+
+                # augment feedback for each trajectory
+                D = augment_feedback_diff(feedback_traj,
+                                          signal,
+                                          important_features,
+                                          timesteps,
+                                          self.env,
+                                          actions=actions,
+                                          time_window=self.time_window,
+                                          datatype=self.datatype,
+                                          length=5000)
 
                 # Update reward buffer with augmented data
                 self.reward_model.update_buffer(D,
                                                 signal,
                                                 important_features,
                                                 self.datatype,
-                                                feedback_type)
+                                                actions)
 
             # TODO: update other feedback rewards separately
             # Update reward model with augmented data
-            if state:
-                self.reward_model.update(FeedbackTypes.STATE_DIFF)
-            if action:
-                self.reward_model.update(FeedbackTypes.ACTIONS)
+            self.reward_model.update()
 
             # evaluate different rewards
         #     rew_values = evaluate_MO(model, self.env, n_episodes=100)

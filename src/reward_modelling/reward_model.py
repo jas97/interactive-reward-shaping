@@ -12,21 +12,14 @@ class RewardModel:
 
         self.buffer = ReplayBuffer(capacity=10000, time_window=self.time_window)
 
-        self.state_diff_predictor = RandomForestRegressor(n_estimators=100, random_state=0)
-        self.actions_predictor = RandomForestRegressor(n_estimators=10, random_state=0)
-        self.features_predictor = RandomForestRegressor(n_estimators=10, random_state=0)
+        self.predictor = RandomForestRegressor(n_estimators=1000, random_state=0)
 
-    def update(self, feedback_type=FeedbackTypes.STATE_DIFF):
-        dataset = self.buffer.get_dataset(feedback_type)
+    def update(self):
+        dataset = self.buffer.get_dataset()
         X = np.array(dataset.tensors[0])
         y = np.array(dataset.tensors[1])
 
-        if feedback_type == FeedbackTypes.STATE_DIFF:
-            regressor = self.state_diff_predictor
-        elif feedback_type == FeedbackTypes.ACTIONS:
-            regressor = self.actions_predictor
-        elif feedback_type == FeedbackTypes.FEATURE:
-            regressor = self.features_predictor
+        regressor = self.predictor
 
         regressor.fit(X, y)
 
@@ -35,19 +28,12 @@ class RewardModel:
 
         print('Trained with random forest on {} samples. Mean squared error: {}'.format(X.shape[0], mse))
 
-    def update_buffer(self, D, signal, important_features, datatype, feedback_type):
-        self.buffer.update(D, signal, important_features, datatype, feedback_type)
+    def update_buffer(self, D, signal, important_features, datatype, actions):
+        self.buffer.update(D, signal, important_features, datatype, actions)
 
-    def predict(self, encoding, feedback_type=FeedbackTypes.STATE_DIFF):
-        if feedback_type is FeedbackTypes.STATE_DIFF:
-            predictor = self.state_diff_predictor
-        elif feedback_type is FeedbackTypes.ACTIONS:
-            predictor = self.actions_predictor
-        elif feedback_type is FeedbackTypes.FEATURE:
-            predictor = self.features_predictor
-
+    def predict(self, encoding):
         encoding = np.array(encoding).reshape(1, -1)
-        return predictor.predict(encoding)
+        return self.predictor.predict(encoding)
 
 
 

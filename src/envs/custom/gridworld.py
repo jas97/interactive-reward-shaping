@@ -3,6 +3,8 @@ import random
 import gym
 import numpy as np
 
+from src.feedback.feedback_processing import encode_trajectory
+
 
 class Gridworld(gym.Env):
 
@@ -95,14 +97,18 @@ class Gridworld(gym.Env):
         past = self.episode
         curr = 1
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
-            s, a = past[j]
-            if curr >= self.time_window:
-                break
-
-            state_enc = self.encode_diff(s, state, curr)
+            state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
 
             rew = self.reward_model.predict(state_enc)
             running_rew += rew.item()
+
+            if rew < 0:
+                print(state_enc)
+
+            if curr >= self.time_window:
+                break
+
+            curr += 1
 
         return running_rew
 
@@ -163,19 +169,3 @@ class Gridworld(gym.Env):
     def set_shaping(self, boolean):
         self.shaping = boolean
 
-    def encode_diff(self, start_s, end_s, timesteps):
-        enc = np.array(list(start_s) + list(end_s - start_s) + [timesteps])
-        return enc
-
-    def encode_actions(self, action, past):
-        enc = [self.action_space.n] * self.time_window
-
-        i = 0
-        for el in past:
-            enc[i] = el[1]
-            i += 1
-
-        if i < self.time_window:
-            enc[i] = action
-
-        return np.array(enc)

@@ -3,6 +3,8 @@ import torch
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
+from src.feedback.feedback_processing import encode_trajectory
+
 
 def check_dtype(env):
     obs = env.reset().flatten()
@@ -17,12 +19,11 @@ def check_dtype(env):
         raise TypeError('Unknown type of the observation')
 
 
-def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized also using a trained policy
+def init_replay_buffer(env, time_window):
     print('Initializing replay buffer with env reward...')
     D = []
-    A = []
 
-    for i in tqdm(range(100)):
+    for i in tqdm(range(50)):
         done = False
         obs = env.reset()
         while not done:
@@ -30,15 +31,13 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
             past = env.episode
             curr = 1
             for j in range(len(past)-1, -1, -1):
-                s, a = past[j]
+                enc = encode_trajectory(past[j:], curr, time_window, env)
+
+                D.append(enc)
+
                 if curr >= time_window:
                     break
 
-                state_enc = env.encode_diff(s, obs, curr)
-                action_enc = env.encode_actions(action, past[j:])
-
-                A.append(action_enc)
-                D.append(state_enc)
                 curr += 1
 
             obs, rew, done, _ = env.step(action)
@@ -46,19 +45,10 @@ def init_replay_buffer(env, time_window):  # TODO: maybe should be initialized a
     D = torch.tensor(np.array(D))
     D = torch.unique(D, dim=0)  # remove duplicates
 
-    A = torch.tensor(np.array(A))
-    A = torch.unique(A, dim=0)
-
     y_D = np.zeros((len(D), ))
     y_D = torch.tensor(y_D)
 
-    y_A = np.zeros((len(A),))
-    y_A = torch.tensor(y_A)
+    dataset = TensorDataset(D, y_D)
+    print('Generated {} env samples for dataset'.format(len(D)))
 
-    state_diff_dataset = TensorDataset(D, y_D)
-    print('Generated {} env samples for state_diff'.format(len(D)))
-
-    action_dataset = TensorDataset(A, y_A)
-    print('Generated {} env samples for action'.format(len(A)))
-
-    return state_diff_dataset, action_dataset
+    return dataset
