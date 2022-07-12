@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-from src.feedback.feedback_processing import FeedbackTypes
 from src.reward_modelling.replay_buffer import ReplayBuffer
 
 
@@ -11,7 +10,6 @@ class RewardModel:
         self.time_window = time_window
 
         self.buffer = ReplayBuffer(capacity=10000, time_window=self.time_window)
-
         self.predictor = RandomForestRegressor(n_estimators=1000, random_state=0)
 
     def update(self):

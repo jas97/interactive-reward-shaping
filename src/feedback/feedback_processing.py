@@ -2,13 +2,6 @@ import numpy as np
 import torch
 from dtw import dtw
 from torch.utils.data import TensorDataset
-from enum import Enum
-
-
-class FeedbackTypes(Enum):
-    STATE_DIFF = 'state_diff'
-    ACTIONS = 'actions'
-    FEATURE = 'feature'
 
 
 def present_successful_traj(model, env, n_traj=10):
@@ -70,8 +63,14 @@ def gather_feedback(best_traj):
     feedback = []
 
     while not done:
-        print('Input feedback type (state_diff, actions or feature)')
+        print('Input feedback type (state_diff, actions, feature or none)')
         feedback_type = input()
+        if feedback_type == 'done':
+            return [], False
+
+        if feedback_type == 'none':
+            return [], True
+
         print('Input trajectory number:')
         traj_id = int(input())
         print('Enter starting timestep:')
@@ -101,7 +100,7 @@ def gather_feedback(best_traj):
         else:
             done = True
 
-    return feedback
+    return feedback, True
 
 
 def augment_feedback_diff(traj, signal, important_features, timesteps, env, actions=False, time_window=5, datatype='int', length=100):
@@ -122,15 +121,15 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, acti
     # add noise to important features if they are continuous
     if datatype != 'int':
         # adding noise for continuous state features
-        D[:, :traj_len*state_len] = D[:, :traj_len*state_len] + np.random.normal(0, 0.001, (length, traj_len*state_len))
+        D[:, :time_window*state_len] = D[:, :time_window*state_len] + np.random.normal(0, 0.001, (length, time_window*state_len))
 
     # observation limits
-    lows = list(np.tile(env.lows, (traj_len, 1)).flatten())
-    highs = list(np.tile(env.highs, (traj_len, 1)).flatten())
+    lows = list(np.tile(env.lows, (time_window, 1)).flatten())
+    highs = list(np.tile(env.highs, (time_window, 1)).flatten())
 
     # action limits
-    lows += [0] * traj_len
-    highs += [env.action_space.n] * traj_len
+    lows += [0] * time_window
+    highs += [env.action_space.n] * time_window
 
     # timesteps limits
     lows += [1]
@@ -209,3 +208,16 @@ def encode_trajectory(traj, timesteps, time_window, env):
     enc = np.array(enc)
 
     return enc
+
+
+def generate_important_features(important_features, feedback_type, time_window, feedback_traj):
+    actions = feedback_type == 'actions'
+    state_len = feedback_traj[0][0].flatten().shape[0]
+    traj_len = len(feedback_traj)
+    important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
+    important_features += [(time_window + 1) * state_len]  # add timesteps as important
+
+    if actions:
+        important_features += list(np.arange(time_window * state_len, time_window * state_len + traj_len))
+
+    return important_features, actions

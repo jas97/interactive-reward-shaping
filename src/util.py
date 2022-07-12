@@ -40,35 +40,6 @@ def load_config(config_path):
     return data
 
 
-def evaluate_MO(model, env, n_episodes=100):
-    # estimate number of objectives
-    env.reset()
-    _, _, _, info = env.step(env.action_space.sample())
-
-    objectives = info['rewards']
-    reward_names = [obj_n for obj_n, obj_val in objectives.items()]
-    num_objectives = len(info['rewards'])
-    ep_average = {rn: 0.0 for rn in reward_names}
-
-    for ep in range(n_episodes):
-        rewards = {rn: 0.0 for rn in reward_names}
-
-        done = False
-        obs = env.reset()
-        while not done:
-            action, _ = model.predict(obs)
-            obs, _, done, info = env.step(action)
-
-            step_rewards = info['rewards']
-            rewards = {rn: rewards[rn] + step_rewards[rn] for rn in rewards.keys()}
-
-        ep_average = {rn: ep_average[rn] + rewards[rn] for rn in ep_average}
-
-    ep_average = {rn: ep_average[rn] / n_episodes for rn in ep_average}
-
-    return ep_average
-
-
 def seed_everything(seed=1):
     seed_value = seed
     os.environ['PYTHONHASHSEED'] = str(seed_value)

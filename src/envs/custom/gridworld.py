@@ -59,8 +59,9 @@ class Gridworld(gym.Env):
         self.state = new_state
         self.steps += 1
 
+        reached_goal = (self.state[0] == self.state[2]) and (self.state[1] == self.state[3])
         info = {}
-        info['rewards'] = {'total': rew}
+        info['rewards'] = {'total': rew, 'goal': int(reached_goal)}
 
         return new_state.flatten(), rew, done, info
 
@@ -101,9 +102,6 @@ class Gridworld(gym.Env):
 
             rew = self.reward_model.predict(state_enc)
             running_rew += rew.item()
-
-            if rew < 0:
-                print(state_enc)
 
             if curr >= self.time_window:
                 break
@@ -168,4 +166,9 @@ class Gridworld(gym.Env):
 
     def set_shaping(self, boolean):
         self.shaping = boolean
+
+    def config(self, rewards):
+        self.goal_rew = rewards['goal']
+        self.step_pen = rewards['step_pen']
+        self.turn_pen = rewards['turn_pen']
 

@@ -1,30 +1,37 @@
-import numpy as np
+import copy
+
 from stable_baselines3 import DQN
 
-from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, FeedbackTypes
+from src.evaluation.evaluator import Evaluator
+from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, \
+    generate_important_features
 from src.reward_modelling.reward_model import RewardModel
 from src.tasks.task_util import init_replay_buffer, check_dtype
-from src.util import evaluate_policy, evaluate_MO
 from src.visualization.visualization import visualize_feature, visualize_rewards
 
 
 class Task:
 
-    def __init__(self, env, model_path, task_name, model_config, time_window, feedback_freq):
+    def __init__(self, env, model_path, task_name, env_config, model_config, feedback_freq):
         self.model_path = model_path
-        self.time_window = time_window
+        self.time_window = env_config['time_window']
         self.feedback_freq = feedback_freq
         self.task_name = task_name
         self.model_config = model_config
 
         self.env = env
-        self.reward_model = RewardModel(time_window)
+        self.reward_model = RewardModel(self.time_window)
 
         # initialize buffer of the reward model
         self.reward_model.buffer.initialize(init_replay_buffer(self.env, self.time_window))
 
+        # evaluator object
+        self.evaluator = Evaluator(self.feedback_freq, copy.copy(env), env_config, model_config)
+
         # check the dtype of env state space
         self.datatype = check_dtype(self.env)
+
+        self.max_iter = 20
 
     def run(self):
         finished_training = False
@@ -58,23 +65,19 @@ class Task:
             title = 'Before reward shaping' if iteration == 1 else 'After reward shaping'
             visualize_feature(best_traj, 0, plot_actions=True, title=title)  # TODO: remove hardcoding
 
-            if iteration == 20:  # so far for initial experiments
+            if iteration >= self.max_iter:
                 break
 
             # gather feedback trajectories
-            feedback = gather_feedback(best_traj)
+            feedback, cont = gather_feedback(best_traj)
             for f in feedback:
-                print('Feedback trajectory = {}. Important features = {}. '.format(f[0], f[1]))
+                print('Feedback trajectory = {} '.format(f[1]))
+
+            if not cont:
+                break
 
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
-                actions = feedback_type == 'actions'
-                state_len = feedback_traj[0][0].flatten().shape[0]
-                traj_len = len(feedback_traj)
-                important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
-                important_features += [(traj_len+1)*state_len] # add timesteps as important
-
-                if actions:
-                    important_features += list(np.arange(traj_len * state_len, traj_len * state_len + traj_len))
+                important_features, actions = generate_important_features(important_features, feedback_type, self.time_window, feedback_traj)
 
                 # augment feedback for each trajectory
                 D = augment_feedback_diff(feedback_traj,
@@ -85,7 +88,7 @@ class Task:
                                           actions=actions,
                                           time_window=self.time_window,
                                           datatype=self.datatype,
-                                          length=5000)
+                                          length=2000)
 
                 # Update reward buffer with augmented data
                 self.reward_model.update_buffer(D,
@@ -94,23 +97,17 @@ class Task:
                                                 self.datatype,
                                                 actions)
 
-            # TODO: update other feedback rewards separately
             # Update reward model with augmented data
-            self.reward_model.update()
+            if len(feedback) > 0:
+                self.reward_model.update()
 
             # evaluate different rewards
-        #     rew_values = evaluate_MO(model, self.env, n_episodes=100)
-        #     if iteration == 1:
-        #         reward_dict = rew_values
-        #     else:
-        #         reward_dict = {rn: reward_dict[rn] + rew_values[rn] for rn in rew_values.keys()}
-        #
-            iteration += 1
-        #
-        # # visualize different rewards
-        # xticks = np.arange(0, self.feedback_freq*iteration, step=self.feedback_freq)
-        # visualize_rewards(reward_dict, title='Average reward objectives without reward shaping', xticks=xticks)
+            self.evaluator.evaluate(model, self.env)
 
+            iteration += 1
+
+        # # visualize different rewards
+        self.evaluator.visualize(iteration)
 
 
 

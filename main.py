@@ -29,7 +29,7 @@ def main():
     task_config = load_config(task_config_path)
 
     if task_name == 'gridworld':
-        env = Gridworld(**env_config)
+        env = Gridworld(env_config['time_window'], shaping=False)
     elif task_name == 'highway':
         env = CustomHighwayEnv(shaping=False, time_window=env_config['time_window'])
         env.config['right_lane_reward'] = env_config['right_lane_reward']
@@ -38,7 +38,7 @@ def main():
     elif task_name == 'inventory':
         env = Inventory(**env_config)
 
-    task = Task(env, model_path, task_name, model_config, env_config['time_window'], **task_config)
+    task = Task(env, model_path, task_name, env_config, model_config, **task_config)
     task.run()
 
 
