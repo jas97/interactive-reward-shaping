@@ -1,8 +1,6 @@
 import numpy as np
 
 from src.envs.original.gym_inventory.inventory_env import InventoryEnv
-
-# TODO: create abstract class to define all necessary methods
 from src.feedback.feedback_processing import encode_trajectory
 
 
@@ -20,6 +18,12 @@ class Inventory(InventoryEnv):
         self.highs.fill(100)
 
         self.action_dtype = 'cont'
+
+        self.lmbda = 0.1
+
+        self.config = {
+
+        }
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))

@@ -7,6 +7,7 @@ from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
 from src.feedback.feedback_processing import encode_trajectory, present_successful_traj
+from src.util import evaluate_policy
 from src.visualization.visualization import visualize_feature
 
 
@@ -79,6 +80,10 @@ def train_expert_model(env, env_config, model_config, expert_path, timesteps):
         model.learn(total_timesteps=timesteps)
 
         model.save(expert_path)
+
+    # evaluate expert on true reward
+    true_mean_rew = evaluate_policy(model, env, n_ep=100)
+    print('Expert true mean reward = {}'.format(true_mean_rew))
 
     best_exp_traj = present_successful_traj(model, env)
     visualize_feature(best_exp_traj, 2, plot_actions=False, title='Expert\'s lane change')

@@ -48,17 +48,15 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         right_lane_rew = self.config["right_lane_reward"] * self.lane / max(len(neighbours) - 1, 1)
         speed_rew = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
+        lane_change = sum(self.lane_changed[-self.time_window:]) >= 2
+        true_reward = self.calculate_true_reward(rew, lane_change)
+
         aug_rew = 0
         if self.shaping:
             aug_rew = self.augment_reward(action, self.state.flatten())
 
         rew += aug_rew
-
-        lane_change = sum(self.lane_changed[-self.time_window:]) >= 2
-
         rew += lane_change * self.config['lane_change_reward']
-
-        true_reward = self.calculate_true_reward(rew, lane_change)
 
         info['rewards'] = {'collision_rew': coll_rew,
                            'right_lane_rew': right_lane_rew,
@@ -97,6 +95,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         curr = 1
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
             state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
+
             rew = self.reward_model.predict(state_enc)
             running_rew += self.lmbda * rew.item()
 

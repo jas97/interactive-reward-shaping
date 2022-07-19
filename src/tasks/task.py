@@ -99,7 +99,7 @@ class Task:
                                           self.time_window,
                                           actions,
                                           datatype=(self.state_dtype, self.action_dtype),
-                                          length=5000)
+                                          length=10000)
 
                 # Update reward buffer with augmented data
                 self.reward_model.update_buffer(D,

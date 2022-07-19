@@ -65,7 +65,7 @@ def gather_feedback(best_traj):
     feedback = []
 
     while not done:
-        print('Input feedback type (state_diff, actions, feature or none)')
+        print('Input feedback type (s, a, none or done)')
         feedback_type = input()
         if feedback_type == 'done':
             return [], False
@@ -216,7 +216,7 @@ def encode_trajectory(traj, timesteps, time_window, env):
 
 
 def generate_important_features(important_features, feedback_type, time_window, feedback_traj):
-    actions = feedback_type == 'actions'
+    actions = feedback_type == 'a'
     state_len = feedback_traj[0][0].flatten().shape[0]
     traj_len = len(feedback_traj)
     important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]

@@ -25,11 +25,6 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         self.observation_space = spaces.Box(0, n + 1, (1, ), dtype=np.int)
         self.max = n
         self.state = n
-        self.item_cost = item_cost
-        self.item_sale = item_sale
-        self.hold_cost = hold_cost
-        self.loss_cost = loss_cost
-        self.delivery_cost = delivery_cost
         self.lam = lam
 
         # Set seed
@@ -39,6 +34,14 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         self.reset()
 
         self.max_timesteps = 14
+
+        self.config = {
+            "item_cost": -1,
+            "item_sale": 2,
+            "hold_cost": 0,
+            "loss_cost": -1,
+            "delivery_cost": -10
+          }
 
     def demand(self):
         return np.random.poisson(self.lam)
@@ -52,16 +55,16 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         x = x.item()
         m = self.max
 
-        # item ordering fee + sale reward + holding fee + loss if not enough to satisfy demand
         new_x = min(x + a, m)
 
-        item_cost = a * self.item_cost
-        profit = min(y, new_x) * self.item_sale
-        demand_loss = max(y - new_x, 0) * self.loss_cost
+        item_cost = a * self.config["item_cost"]
+        profit = min(y, new_x) * self.config["item_sale"]
+        demand_loss = max(y - new_x, 0) * self.config["loss_cost"]
+        delivery_loss = (a > 0) * self.config["delivery_cost"]
 
-        r = item_cost + profit + demand_loss
+        r = item_cost + profit + demand_loss + delivery_loss
 
-        return r, item_cost, profit, demand_loss
+        return r, item_cost, profit, demand_loss, delivery_loss
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -75,7 +78,7 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         obs2 = self.transition(obs, action, demand)
         self.state = obs2
 
-        reward, item_cost, profit, demand_loss = self.reward(obs, action, demand)
+        reward, item_cost, profit, demand_loss, delivery_loss = self.reward(obs, action, demand)
 
         done = self.steps >= self.max_timesteps
         self.steps += 1
@@ -84,10 +87,17 @@ class InventoryEnv(gym.Env, utils.EzPickle):
 
         info['rewards'] = {'item_cost': item_cost,
                            'profit': profit,
-                           'demand_loss': demand_loss}
+                           'demand_loss': demand_loss,
+                           'delivery_loss': delivery_loss}
 
         return obs2, reward, done, info
 
     def reset(self):
         self.steps = 0
         return self.state
+
+    def configure(self, rewards):
+        self.config.update(rewards)
+
+    def set_true_reward(self, rewards):
+        self.true_rewards = rewards
