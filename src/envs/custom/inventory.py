@@ -19,7 +19,7 @@ class Inventory(InventoryEnv):
         self.highs = np.ones((1, 0))
         self.highs.fill(100)
 
-        self.lmbda = 0.2
+        self.action_dtype = 'cont'
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
@@ -29,7 +29,7 @@ class Inventory(InventoryEnv):
         self.state = np.array([self.state]).flatten()
 
         if self.shaping:
-            shaped_rew = self.lmbda * self.augment_reward(action, self.state.flatten())
+            shaped_rew = self.augment_reward(action, self.state.flatten())
             rew += shaped_rew
 
         info['env_rew'] = rew
@@ -74,6 +74,3 @@ class Inventory(InventoryEnv):
 
     def render_state(self, state):
         print('Inventory: {}'.format(state))
-
-    def update_lambda(self, update):
-        self.lmbda = self.lmbda * update

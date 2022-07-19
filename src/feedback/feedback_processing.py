@@ -12,10 +12,12 @@ def present_successful_traj(model, env, n_traj=10):
     # filter trajectories
     top_indices = np.argsort(rews)[-n_traj:]
     filtered_traj = [traj_buffer[i] for i in top_indices]
+    top_rews = [rews[i] for i in top_indices]
 
     # play filtered trajectories
-    for i, t in enumerate(filtered_traj):
-        print('------------------\n Trajectory {} \n------------------\n'.format(i))
+    for j, t in enumerate(filtered_traj):
+        print('------------------\n Trajectory {} \n------------------\n'.format(j))
+        print('Trajectory reward = {}'.format(top_rews[j]))
         play_trajectory(env, t)
 
     return filtered_traj
@@ -103,8 +105,10 @@ def gather_feedback(best_traj):
     return feedback, True
 
 
-def augment_feedback_diff(traj, signal, important_features, timesteps, env, actions=False, time_window=5, datatype='int', length=100):
+def augment_feedback_diff(traj, signal, important_features, timesteps, env, time_window, actions, datatype, length=100):
     print('Augmenting feedback...')
+
+    state_dtype, action_dtype = datatype
 
     state_len = traj[0][0].flatten().shape[0]
     traj_len = len(traj)
@@ -119,7 +123,7 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, acti
     D = np.tile(traj_enc, (length, 1))
 
     # add noise to important features if they are continuous
-    if datatype != 'int':
+    if state_dtype != 'int':
         # adding noise for continuous state features
         D[:, :time_window*state_len] = D[:, :time_window*state_len] + np.random.normal(0, 0.001, (length, time_window*state_len))
 
@@ -136,10 +140,12 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, acti
     highs += [time_window]
 
     # generate matrix of random values within allowed ranges
-    if datatype == 'int':
+    if state_dtype == 'int' or (actions and action_dtype == 'int'):
         rand_D = np.random.randint(lows, highs, size=(length, enc_len))
     else:
         rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
+        if actions:
+            rand_D[:, time_window*state_len:] = augment_actions(traj, length)
 
     D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
 
@@ -157,12 +163,11 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, acti
     return dataset
 
 
-def augment_actions(feedback_traj, env, length=2000):
+def augment_actions(feedback_traj, length=2000):
     actions = [a for (s, a) in feedback_traj]
     traj_len = len(actions)
 
     # generate neighbourhood of sequences of actions
-    # TODO: different options for generating neighborhood
     random_traj = np.tile(actions, (length*100, 1))
 
     random_traj = np.round(random_traj + np.random.normal(0, 5, size=(length*100, traj_len)))
@@ -184,7 +189,7 @@ def encode_trajectory(traj, timesteps, time_window, env):
     states = []
     actions = []
 
-    state_len = len(traj[0][0])
+    state_len = len(traj[0][0].flatten())
 
     curr = 0
     for s, a in traj:
@@ -215,7 +220,7 @@ def generate_important_features(important_features, feedback_type, time_window, 
     state_len = feedback_traj[0][0].flatten().shape[0]
     traj_len = len(feedback_traj)
     important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
-    important_features += [(time_window + 1) * state_len]  # add timesteps as important
+    important_features += [time_window * state_len + time_window]  # add timesteps as important
 
     if actions:
         important_features += list(np.arange(time_window * state_len, time_window * state_len + traj_len))

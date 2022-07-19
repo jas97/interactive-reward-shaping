@@ -1,30 +1,26 @@
 import numpy as np
+import torch
 from sklearn.ensemble import RandomForestRegressor
+from torch.utils.data import DataLoader
 
 from src.reward_modelling.replay_buffer import ReplayBuffer
+from src.reward_modelling.reward_nn import RewardModelNN
 
 
 class RewardModel:
 
-    def __init__(self, time_window):
+    def __init__(self, time_window, expert_data, input_size):
         self.time_window = time_window
 
         self.buffer = ReplayBuffer(capacity=10000, time_window=self.time_window)
-        self.predictor = RandomForestRegressor(n_estimators=1000, random_state=0)
+        self.predictor = RewardModelNN(input_size, expert_data)
 
     def update(self):
         dataset = self.buffer.get_dataset()
-        X = np.array(dataset.tensors[0])
-        y = np.array(dataset.tensors[1])
+        train, test = torch.utils.data.random_split(dataset, [int(0.8*len(dataset)), len(dataset) - int(0.8*len(dataset))])
 
-        regressor = self.predictor
-
-        regressor.fit(X, y)
-
-        pred = regressor.predict(X)
-        mse = np.mean((y - pred) ** 2)
-
-        print('Trained with random forest on {} samples. Mean squared error: {}'.format(X.shape[0], mse))
+        self.predictor.train(DataLoader(train, shuffle=True, batch_size=128))
+        self.predictor.evaluate(DataLoader(test, shuffle=True, batch_size=128))
 
     def update_buffer(self, D, signal, important_features, datatype, actions):
         self.buffer.update(D, signal, important_features, datatype, actions)
@@ -32,6 +28,9 @@ class RewardModel:
     def predict(self, encoding):
         encoding = np.array(encoding).reshape(1, -1)
         return self.predictor.predict(encoding)
+
+    def save(self):
+        self.predictor.save()
 
 
 

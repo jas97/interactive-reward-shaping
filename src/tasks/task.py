@@ -6,8 +6,8 @@ from src.evaluation.evaluator import Evaluator
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, \
     generate_important_features
 from src.reward_modelling.reward_model import RewardModel
-from src.tasks.task_util import init_replay_buffer, check_dtype
-from src.visualization.visualization import visualize_feature, visualize_rewards
+from src.tasks.task_util import init_replay_buffer, check_dtype, train_expert_model
+from src.visualization.visualization import visualize_feature
 
 
 class Task:
@@ -18,20 +18,27 @@ class Task:
         self.feedback_freq = feedback_freq
         self.task_name = task_name
         self.model_config = model_config
-
         self.env = env
-        self.reward_model = RewardModel(self.time_window)
+
+        # set true reward function
+        self.env.set_true_reward(env_config['true_reward_func'])
+
+        self.expert_path = 'trained_models/{}_expert'.format(task_name)
+        self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, env_config['expert_timesteps'])
+        expert_data = init_replay_buffer(self.env, self.expert_model, self.time_window)
+
+        self.reward_model = RewardModel(self.time_window, expert_data, env_config['input_size'])
 
         # initialize buffer of the reward model
-        self.reward_model.buffer.initialize(init_replay_buffer(self.env, self.time_window))
+        self.reward_model.buffer.initialize(expert_data)
 
         # evaluator object
-        self.evaluator = Evaluator(self.feedback_freq, copy.copy(env), env_config, model_config)
+        self.evaluator = Evaluator(self.expert_model, self.feedback_freq, copy.copy(env))
 
         # check the dtype of env state space
-        self.datatype = check_dtype(self.env)
+        self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-        self.max_iter = 20
+        self.max_iter = 200
 
     def run(self):
         finished_training = False
@@ -48,6 +55,7 @@ class Task:
                 # if it's not the first iteration reward model should be used
                 self.env.set_shaping(True)
                 self.env.set_reward_model(self.reward_model)
+
             except FileNotFoundError:
                 model = DQN('MlpPolicy',
                             self.env,
@@ -55,6 +63,7 @@ class Task:
                 print('First time training the model')
 
             print('Training DQN for {} timesteps'.format(self.feedback_freq))
+
             model.learn(total_timesteps=self.feedback_freq)
             model.save(self.model_path + '_{}'.format(iteration))
 
@@ -62,8 +71,8 @@ class Task:
             best_traj = present_successful_traj(model, self.env, n_traj=10)
 
             # visualize features and/or actions
-            title = 'Before reward shaping' if iteration == 1 else 'After reward shaping'
-            visualize_feature(best_traj, 0, plot_actions=True, title=title)  # TODO: remove hardcoding
+            title = 'Iteration = {}'.format(iteration)
+            visualize_feature(best_traj, 2, plot_actions=False, title=title)
 
             if iteration >= self.max_iter:
                 break
@@ -74,6 +83,8 @@ class Task:
                 print('Feedback trajectory = {} '.format(f[1]))
 
             if not cont:
+                self.reward_model.update()
+                self.evaluator.evaluate(model, self.env)
                 break
 
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
@@ -85,21 +96,20 @@ class Task:
                                           important_features,
                                           timesteps,
                                           self.env,
-                                          actions=actions,
-                                          time_window=self.time_window,
-                                          datatype=self.datatype,
-                                          length=2000)
+                                          self.time_window,
+                                          actions,
+                                          datatype=(self.state_dtype, self.action_dtype),
+                                          length=5000)
 
                 # Update reward buffer with augmented data
                 self.reward_model.update_buffer(D,
                                                 signal,
                                                 important_features,
-                                                self.datatype,
+                                                (self.state_dtype, self.action_dtype),
                                                 actions)
 
             # Update reward model with augmented data
-            if len(feedback) > 0:
-                self.reward_model.update()
+            self.reward_model.update()
 
             # evaluate different rewards
             self.evaluator.evaluate(model, self.env)

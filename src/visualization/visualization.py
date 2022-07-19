@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 
+
 def visualize_feature(traj, feature_id, plot_actions=False, title=''):
     feature_vals = []
     for t in traj:
@@ -34,13 +35,12 @@ def visualize_rewards(rew_dict, title='', xticks=None):
     for rew_name, rew_values in rew_dict.items():
         plt.plot(rew_values, label=rew_name)
 
-    plt.legend(loc="upper left")
-    plt.title = title
+        plt.title = rew_name
 
-    if xticks is not None:
-        plt.xticks = xticks
+        if xticks is not None:
+            plt.xticks = xticks
 
-    plt.xlabel('Time steps')
-    plt.ylabel('Average reward')
+        plt.xlabel('Time steps')
+        plt.ylabel('Average reward')
 
-    plt.show()
+        plt.show()

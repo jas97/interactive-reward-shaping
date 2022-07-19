@@ -16,6 +16,7 @@ class Gridworld(gym.Env):
         self.highs = np.array([self.world_dim, self.world_dim, self.world_dim, self.world_dim, 4])
         self.observation_space = gym.spaces.Box(self.lows, self.highs, shape=(5, ))
         self.action_space = gym.spaces.Discrete(2)
+        self.action_dtype = 'int'
 
         self.state = np.zeros((5, ))
 
@@ -26,9 +27,16 @@ class Gridworld(gym.Env):
 
         self.max_steps = 50
         self.steps = 0
+        self.lmbda = 0.2
 
         # keep record of the last episode
         self.episode = []
+
+        self.config = {
+            'step_pen': -1,
+            'turn_pen': 0,
+            'goal_rew': 1
+        }
 
     def step(self, action):
         self.episode.append((self.state, action))
@@ -61,7 +69,9 @@ class Gridworld(gym.Env):
 
         reached_goal = (self.state[0] == self.state[2]) and (self.state[1] == self.state[3])
         info = {}
-        info['rewards'] = {'total': rew, 'goal': int(reached_goal)}
+
+        true_rew = self.calculate_true_reward(action, new_state)
+        info['rewards'] = {'goal': int(reached_goal), 'true_reward': true_rew}
 
         return new_state.flatten(), rew, done, info
 
@@ -93,6 +103,24 @@ class Gridworld(gym.Env):
 
         return rew
 
+    def calculate_true_reward(self, action, state):
+        true_step_pen = self.true_rewards['step_pen']
+        true_turn_pen = self.true_rewards['turn_pen']
+        true_goal_rew = self.true_rewards['goal_rew']
+
+        agent_x, agent_y, goal_x, goal_y, orient = state
+
+        rew = 0.0
+
+        if (agent_x == goal_x) and (agent_y == goal_y):
+            rew = true_goal_rew
+        elif action == 0:
+            rew = true_step_pen
+        elif action == 1:
+            rew = true_turn_pen
+
+        return rew
+
     def augment_reward(self, action, state):
         running_rew = 0
         past = self.episode
@@ -100,7 +128,7 @@ class Gridworld(gym.Env):
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
             state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
 
-            rew = self.reward_model.predict(state_enc)
+            rew = self.lmbda * self.reward_model.predict(state_enc)
             running_rew += rew.item()
 
             if curr >= self.time_window:
@@ -167,8 +195,12 @@ class Gridworld(gym.Env):
     def set_shaping(self, boolean):
         self.shaping = boolean
 
-    def config(self, rewards):
-        self.goal_rew = rewards['goal']
+    def configure(self, rewards):
+        self.goal_rew = rewards['goal_rew']
         self.step_pen = rewards['step_pen']
         self.turn_pen = rewards['turn_pen']
 
+        self.config.update(rewards)
+
+    def set_true_reward(self, rewards):
+        self.true_rewards = rewards

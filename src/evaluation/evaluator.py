@@ -1,32 +1,22 @@
+import copy
+
 import numpy as np
 from matplotlib import pyplot as plt
 from stable_baselines3 import DQN
 
-from src.visualization.visualization import visualize_rewards
+from src.feedback.feedback_processing import present_successful_traj
+from src.visualization.visualization import visualize_rewards, visualize_feature
 
 
 class Evaluator:
 
-    def __init__(self, feedback_freq, env, env_config, model_config):
+    def __init__(self, expert_model,  feedback_freq, env):
         self.feedback_freq = feedback_freq
         self.env = env
-        self.model_config = model_config
         self.reward_dict = None
-
-        self.rewards = env_config['true_reward_func']
         self.similarities = []
 
-        self.expert_model = self.train_expert_model()
-
-    def train_expert_model(self):
-        print('Training expert...')
-        self.env.config(self.rewards)
-
-        model = DQN('MlpPolicy', self.env, **self.model_config)
-
-        model.learn(total_timesteps=1e5)
-
-        return model
+        self.expert_model = expert_model
 
     def evaluate(self, model, env):
         # Evaluate multiple objectives
@@ -45,16 +35,16 @@ class Evaluator:
 
     def visualize(self, iteration):
         # visualize the effect of shaping on objectives
-        xticks = np.arange(0, self.feedback_freq * iteration, step=self.feedback_freq)
-        visualize_rewards(self.reward_dict, title='Average reward objectives with reward shaping', xticks=xticks)
+        xs = np.arange(0, self.feedback_freq * iteration, step=self.feedback_freq)
+        visualize_rewards(self.reward_dict, title='Average reward objectives with reward shaping', xticks=xs)
 
         # visualize similarity with the expert model
         plt.plot(self.similarities)
-        plt.xticks(xticks)
+        # plt.xticks(xs)
         plt.xlabel('Time steps')
         plt.ylabel('Percentage of equal actions')
-        plt.title('Policy similarity between expert and trained model')
-
+        # plt.title('Policy similarity between expert and trained model')
+        plt.show()
 
     def evaluate_MO(self, model, env, n_episodes=10):
         # estimate number of objectives
@@ -72,15 +62,15 @@ class Evaluator:
             done = False
             obs = env.reset()
             while not done:
-                action, _ = model.predict(obs)
+                action, _ = model.predict(obs, deterministic=True)
                 obs, _, done, info = env.step(action)
 
                 step_rewards = info['rewards']
                 rewards = {rn: rewards[rn] + step_rewards[rn] for rn in rewards.keys()}
 
-            ep_average = {rn: ep_average[rn] + rewards[rn] for rn in ep_average}
+            ep_average = {rn: ep_average[rn] + rewards[rn] for rn in ep_average.keys()}
 
-        ep_average = {rn: [ep_average[rn] / n_episodes] for rn in ep_average}
+        ep_average = {rn: [ep_average[rn] / n_episodes] for rn in ep_average.keys()}
 
         return ep_average
 
@@ -92,8 +82,8 @@ class Evaluator:
             done = False
             obs = env.reset()
             while not done:
-                action_A, _ = model_A.predict(obs)
-                action_B, _ = model_B.predict(obs)
+                action_A, _ = model_A.predict(obs, deterministic=True)
+                action_B, _ = model_B.predict(obs, deterministic=True)
 
                 obs, rew, done, _ = env.step(action_A)
 

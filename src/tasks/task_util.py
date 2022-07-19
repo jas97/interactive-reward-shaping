@@ -1,9 +1,13 @@
+import copy
+
 import numpy as np
 import torch
+from stable_baselines3 import DQN
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
-from src.feedback.feedback_processing import encode_trajectory
+from src.feedback.feedback_processing import encode_trajectory, present_successful_traj
+from src.visualization.visualization import visualize_feature
 
 
 def check_dtype(env):
@@ -11,23 +15,31 @@ def check_dtype(env):
     is_float = np.issubdtype(obs.flatten()[0], np.floating)
     is_int = np.issubdtype(obs.flatten()[0], np.int)
 
+    action_dtype = env.action_dtype
+
     if is_int:
-        return 'int'
+        state_dtype = 'int'
     elif is_float:
-        return 'float'
+        state_dtype = 'cont'
     else:
         raise TypeError('Unknown type of the observation')
 
+    return state_dtype, action_dtype
 
-def init_replay_buffer(env, time_window):
+
+def init_replay_buffer(env, model, time_window):
     print('Initializing replay buffer with env reward...')
     D = []
 
-    for i in tqdm(range(50)):
+    for i in tqdm(range(1000)):
         done = False
         obs = env.reset()
         while not done:
-            action = np.random.randint(0, env.action_space.n, size=(1,)).item()
+            if model is None:
+                action = np.random.randint(0, env.action_space.n, size=(1,)).item()
+            else:
+                action, _ = model.predict(obs, deterministic=True)
+
             past = env.episode
             curr = 1
             for j in range(len(past)-1, -1, -1):
@@ -52,3 +64,25 @@ def init_replay_buffer(env, time_window):
     print('Generated {} env samples for dataset'.format(len(D)))
 
     return dataset
+
+
+def train_expert_model(env, env_config, model_config, expert_path, timesteps):
+    orig_config = copy.copy(env.config)
+    rewards = env_config['true_reward_func']
+    env.configure(rewards)
+    try:
+        model = DQN.load(expert_path, seed=1, env=env)
+        print('Loaded expert')
+    except FileNotFoundError:
+        print('Training expert...')
+        model = DQN('MlpPolicy', env, **model_config)
+        model.learn(total_timesteps=timesteps)
+
+        model.save(expert_path)
+
+    best_exp_traj = present_successful_traj(model, env)
+    visualize_feature(best_exp_traj, 2, plot_actions=False, title='Expert\'s lane change')
+
+    # reset original config
+    env.configure(orig_config)
+    return model

@@ -18,40 +18,68 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
         self.lows = np.zeros((25, ))
         self.highs = np.ones((25, ))
-        self.lows.fill(-1)
+        # speed is in [-1, 1]
+        self.lows[[3, 4, 8, 9, 13, 14, 18, 19, 23, 24]] = -1
+        self.action_dtype = 'int'
 
-        self.lmbda = 0.5
+        self.lane = 0
+        self.lmbda = 0.1
+
+        self.lane_changed = []
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
+
+        curr_lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) else self.vehicle.lane_index[2]
 
         self.state, rew, done, info = super().step(action)
 
         info['true_rew'] = rew
 
         neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
-        lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
-            else self.vehicle.lane_index[2]
+        self.lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) else self.vehicle.lane_index[2]
+
+        self.lane_changed.append(self.lane != curr_lane)
 
         forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
         scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
 
         coll_rew = self.config["collision_reward"] * self.vehicle.crashed
-        right_lane_rew = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
+        right_lane_rew = self.config["right_lane_reward"] * self.lane / max(len(neighbours) - 1, 1)
         speed_rew = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
+        aug_rew = 0
         if self.shaping:
-            rew += self.augment_reward(action, self.state.flatten())
+            aug_rew = self.augment_reward(action, self.state.flatten())
 
-        info['collision_rew'] = coll_rew
-        info['right_lane_rew'] = right_lane_rew
-        info['speed_rew'] = speed_rew
+        rew += aug_rew
+
+        lane_change = sum(self.lane_changed[-self.time_window:]) >= 2
+
+        rew += lane_change * self.config['lane_change_reward']
+
+        true_reward = self.calculate_true_reward(rew, lane_change)
+
+        info['rewards'] = {'collision_rew': coll_rew,
+                           'right_lane_rew': right_lane_rew,
+                           'speed_rew': speed_rew,
+                           'lane_change_rew': aug_rew,
+                           'true_reward': true_reward}
 
         return self.state, rew, done, info
 
+    def calculate_true_reward(self, rew, lane_change):
+        true_rew = rew + self.true_rewards['lane_change_reward'] * lane_change
+
+        return true_rew
+
     def reset(self):
         self.episode = []
+        self.lane_changed = []
         self.state = super().reset()
+
+        self.lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) else self.vehicle.lane_index[2]
+
         return self.state
 
     def close(self):
@@ -70,7 +98,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
             state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
             rew = self.reward_model.predict(state_enc)
-            running_rew += rew.item()
+            running_rew += self.lmbda * rew.item()
 
             if curr >= self.time_window:
                 break
@@ -84,3 +112,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
     def set_shaping(self, boolean):
         self.shaping = boolean
+
+    def set_true_reward(self, rewards):
+        self.true_rewards = rewards
+

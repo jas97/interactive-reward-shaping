@@ -7,7 +7,6 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 
 from src.envs.custom.inventory import Inventory
-from src.util import evaluate_MO
 from src.visualization.visualization import visualize_rewards
 
 class MOCallback(EvalCallback):

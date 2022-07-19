@@ -20,7 +20,7 @@ def main():
 
     env.reset()
 
-    model_path = "trained_models/highway_2.zip"
+    model_path = "trained_models/highway_expert.zip"
 
     model = DQN.load(model_path, env=env)
 

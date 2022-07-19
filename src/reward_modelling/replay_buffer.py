@@ -9,8 +9,6 @@ class ReplayBuffer:
         self.capacity = capacity
         self.time_window = time_window
 
-        self.lmbda = 0.1
-
     def initialize(self, dataset):
         self.dataset = dataset
 
@@ -27,7 +25,7 @@ class ReplayBuffer:
         y = [signal if self.similar_to_data(new_data.tensors[0], full_dataset[i], important_features, datatype, actions) else l for i, l in enumerate(y)]
         y = torch.tensor(y)
 
-        threshold = 0.05
+        threshold = 1
         closest = [self.closest(n, self.dataset.tensors[0], important_features) for n in new_data.tensors[0]]
         new_marked = [max(self.marked[closest[i][0]]) + 1 if closest[i][1] < threshold else 0 for i, n in enumerate(new_data.tensors[0])]
         new_marked = torch.tensor(new_marked)
@@ -36,21 +34,21 @@ class ReplayBuffer:
         self.marked = torch.tensor(self.marked)
         self.marked = torch.cat([self.marked, new_marked])
 
-        y = (self.marked * self.lmbda) * y
+        y = self.marked * y
 
         self.dataset = TensorDataset(full_dataset, y)
 
     def similar_to_data(self, data, x, important_features, datatype, actions, threshold=0.05):
-        # TODO: different options than mse of important features
-        if datatype == 'int' or actions:  # so far look at actions only as discrete
+        state_dtype, action_dtype = datatype
+        if state_dtype == 'int' or (action_dtype == 'int' and actions):
             im_feature_vals = x[important_features]
             exists = torch.where((data[:, important_features] == im_feature_vals).all())
             return len(exists[0]) > 0
-        else: # for continuous data
+        elif state_dtype == 'cont' or (action_dtype == 'cont' and actions):
             mean_features = torch.mean(data, axis=0)
             similarity = abs(mean_features[important_features] - x[important_features])
 
-            return similarity < threshold
+            return (similarity < threshold).all().item()
 
     def closest(self, x, data, important_features):
         difference = torch.mean(abs(data[:, important_features] - x[important_features]), axis=1)
