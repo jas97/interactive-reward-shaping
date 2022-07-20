@@ -10,7 +10,7 @@ from src.visualization.visualization import visualize_rewards, visualize_feature
 
 class Evaluator:
 
-    def __init__(self, expert_model,  feedback_freq, env):
+    def __init__(self, expert_model=None,  feedback_freq=10000, env=None):
         self.feedback_freq = feedback_freq
         self.env = env
         self.reward_dict = None
@@ -93,4 +93,11 @@ class Evaluator:
         sim = sum(np.array(actions_A) == np.array(actions_B)) / len(actions_A)
 
         return sim
+
+    def get_rewards_dict(self):
+        return self.reward_dict
+
+    def reset_reward_dict(self):
+        self.reward_dict = None
+        self.similarities = []
 

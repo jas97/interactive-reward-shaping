@@ -23,7 +23,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         self.action_dtype = 'int'
 
         self.lane = 0
-        self.lmbda = 0.1
+        self.lmbda = 0.5
 
         self.lane_changed = []
 
@@ -62,6 +62,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
                            'right_lane_rew': right_lane_rew,
                            'speed_rew': speed_rew,
                            'lane_change_rew': aug_rew,
+                           'lane_changed': lane_change,
                            'true_reward': true_reward}
 
         return self.state, rew, done, info

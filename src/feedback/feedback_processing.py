@@ -59,10 +59,10 @@ def get_ep_traj(model, env):
     return traj, total_rew
 
 
-def gather_feedback(best_traj):
+def gather_feedback(best_traj, time_window, disruptive=False, noisy=False, prob=0):
     print('Gathering user feedback')
     done = False
-    feedback = []
+    feedback_list = []
 
     while not done:
         print('Input feedback type (s, a, none or done)')
@@ -93,7 +93,12 @@ def gather_feedback(best_traj):
         except ValueError:
             important_features = []
 
-        feedback.append((feedback_type, f, feedback_signal, important_features, timesteps))
+        feedback = (feedback_type, f, feedback_signal, important_features, timesteps)
+
+        if disruptive:
+            feedback = disrupt(feedback, prob)
+
+        feedback_list.append(feedback)
 
         print('Enter another trajectory (y/n?)')
         cont = input()
@@ -102,7 +107,55 @@ def gather_feedback(best_traj):
         else:
             done = True
 
-    return feedback, True
+    if noisy:
+        feedback_list = noise(feedback_list, best_traj, time_window, prob)
+
+    return feedback_list, True
+
+
+def noise(feedback_list, best_traj, time_window, prob):
+    add_noisy_sample = np.random.randint(0, 1, prob=prob)
+
+    if add_noisy_sample:
+        state = best_traj[0][0]
+        state_features_len = len(state)
+
+        rand_traj = np.random.randint(0, len(best_traj))
+        f_rand_traj = best_traj[rand_traj]
+
+        rand_start = np.random.randint(0, len(f_rand_traj))
+        rand_len = np.random.randint(0, time_window)
+
+        f_rand_traj = f_rand_traj[rand_start: (rand_start + rand_len)]
+
+        rand_f_type = np.random.randint(0, len(best_traj))
+        rand_f_type = 's' if rand_f_type else 'a'
+
+        rand_f_signal = np.random.choice((-1, +1))
+
+        timesteps = rand_len
+
+        important_features = []
+        if rand_f_type == 's':
+            important_features = np.random.randint(0, state_features_len)
+
+        feedback_list.append((rand_f_type, f_rand_traj, rand_f_signal, important_features, timesteps))
+
+        return feedback_list
+
+    else: # no noisy samples added
+        return feedback_list
+
+
+def disrupt(feedback, prob):
+    feedback_type, f, feedback_signal, important_features, timesteps = feedback
+
+    disrupt_sample = np.random.choice([0, 1], p=prob)
+    if disrupt_sample:
+        feedback_signal = -feedback_signal
+        return (feedback_type, f, feedback_signal, important_features, timesteps)
+    else:
+        return feedback
 
 
 def augment_feedback_diff(traj, signal, important_features, timesteps, env, time_window, actions, datatype, length=100):

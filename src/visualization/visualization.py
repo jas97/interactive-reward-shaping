@@ -33,7 +33,7 @@ def visualize_feature(traj, feature_id, plot_actions=False, title=''):
 
 def visualize_rewards(rew_dict, title='', xticks=None):
     for rew_name, rew_values in rew_dict.items():
-        plt.plot(rew_values, label=rew_name)
+        plt.plot(rew_values)
 
         plt.title = rew_name
 

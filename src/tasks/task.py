@@ -40,10 +40,11 @@ class Task:
 
         self.max_iter = 200
 
-    def run(self):
+    def run(self, noisy=False, disruptive=False, prob=0):
         finished_training = False
         iteration = 1
         reward_dict = {}
+        self.evaluator.reset_reward_dict()
 
         while not finished_training:
             print('Iteration = {}'.format(iteration))
@@ -78,7 +79,7 @@ class Task:
                 break
 
             # gather feedback trajectories
-            feedback, cont = gather_feedback(best_traj)
+            feedback, cont = gather_feedback(best_traj, self.time_window, disruptive, noisy, prob)
             for f in feedback:
                 print('Feedback trajectory = {} '.format(f[1]))
 
@@ -118,6 +119,7 @@ class Task:
 
         # # visualize different rewards
         self.evaluator.visualize(iteration)
+
 
 
 
