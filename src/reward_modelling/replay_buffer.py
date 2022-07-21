@@ -25,7 +25,7 @@ class ReplayBuffer:
         y = [signal if self.similar_to_data(new_data.tensors[0], full_dataset[i], important_features, datatype, actions) else l for i, l in enumerate(y)]
         y = torch.tensor(y)
 
-        threshold = 1
+        threshold = 0.05
         closest = [self.closest(n, self.dataset.tensors[0], important_features) for n in new_data.tensors[0]]
         new_marked = [max(self.marked[closest[i][0]]) + 1 if closest[i][1] < threshold else 0 for i, n in enumerate(new_data.tensors[0])]
         new_marked = torch.tensor(new_marked)
@@ -62,4 +62,5 @@ class ReplayBuffer:
         return DataLoader(self.dataset, batch_size=256, shuffle=True)
 
     def get_dataset(self):
+        print('Unique values in labels = {}'.format(torch.unique(self.dataset.tensors[1], return_counts=True)))
         return self.dataset

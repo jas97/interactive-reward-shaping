@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-trained_models/
+#trained_models/
 logs/
 
 .idea/

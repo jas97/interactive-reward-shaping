@@ -13,8 +13,8 @@ class RewardNet(nn.Module):
         super(RewardNet, self).__init__()
 
         self.fc1 = nn.Linear(input_size, 256)
-        self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, 1)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, 1)
 
         self.relu = nn.ReLU()
 
