@@ -163,10 +163,13 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, time
 
     state_dtype, action_dtype = datatype
 
-    state_len = traj[0][0].flatten().shape[0]
+    state_len = env.state_len
+
     traj_len = len(traj)
-    traj_enc = encode_trajectory(traj, timesteps, time_window, env)
+    traj_enc = encode_trajectory(traj, state=None, timesteps=timesteps, time_window=time_window, env=env)
     enc_len = traj_enc.shape[0]
+
+    important_features += [im_f + (state_len * i) for i in range(traj_len) for im_f in env.immutable_features]
 
     # generate mask to preserve important features
     random_mask = np.ones((length, enc_len))
@@ -178,11 +181,11 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, time
     # add noise to important features if they are continuous
     if state_dtype != 'int':
         # adding noise for continuous state features
-        D[:, :time_window*state_len] = D[:, :time_window*state_len] + np.random.normal(0, 0.001, (length, time_window*state_len))
+        D[:, env.cont_features] = D[:, env.cont_features] + np.random.normal(0, 0.001, (length, len(env.cont_features)))
 
     # observation limits
-    lows = list(np.tile(env.lows, (time_window, 1)).flatten())
-    highs = list(np.tile(env.highs, (time_window, 1)).flatten())
+    lows = list(np.tile(env.lows, (time_window + 1, 1)).flatten())
+    highs = list(np.tile(env.highs, (time_window + 1, 1)).flatten())
 
     # action limits
     lows += [0] * time_window
@@ -199,6 +202,10 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, time
         rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
         if actions:
             rand_D[:, time_window*state_len:] = augment_actions(traj, length)
+
+    if not actions:
+        # randomize actions
+        rand_D[:, -(time_window+1):] = np.random.randint(lows[-(time_window+1):], highs[-(time_window+1):], (length, time_window+1))
 
     D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
 
@@ -238,27 +245,28 @@ def augment_actions(feedback_traj, length=2000):
     return D
 
 
-def encode_trajectory(traj, timesteps, time_window, env):
+def encode_trajectory(traj, state, timesteps, time_window, env):
     states = []
     actions = []
 
-    state_len = len(traj[0][0].flatten())
+    assert len(traj) <= time_window
 
-    curr = 0
+    curr = 1
     for s, a in traj:
-        if curr >= time_window:
-            break
-
-        states += list(s.flatten())
+        states += list(env.encode_state(s))
         actions.append(a)
+
         curr += 1
+
+    if state is None:
+        states += list(env.random_state())
+    else:
+        states += list(env.encode_state(state))
 
     # add the last state to fill up the trajectory encoding
     # this will be randomized so it does not matter
-    while curr < time_window:
-        low = env.lows
-        highs = env.highs
-        states += list(np.random.randint(low, highs, size=(state_len, )))
+    while curr <= time_window:
+        states += list(env.random_state())
         actions.append(env.action_space.sample())
         curr += 1
 
@@ -268,12 +276,12 @@ def encode_trajectory(traj, timesteps, time_window, env):
     return enc
 
 
-def generate_important_features(important_features, feedback_type, time_window, feedback_traj):
+def generate_important_features(important_features, state_len, feedback_type, time_window, feedback_traj):
     actions = feedback_type == 'a'
-    state_len = feedback_traj[0][0].flatten().shape[0]
+
     traj_len = len(feedback_traj)
     important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
-    important_features += [time_window * state_len + time_window]  # add timesteps as important
+    # important_features += [time_window * state_len + time_window]  # add timesteps as important
 
     if actions:
         important_features += list(np.arange(time_window * state_len, time_window * state_len + traj_len))

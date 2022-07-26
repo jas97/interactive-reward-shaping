@@ -6,7 +6,7 @@ from src.evaluation.evaluator import Evaluator
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, \
     generate_important_features
 from src.reward_modelling.reward_model import RewardModel
-from src.tasks.task_util import init_replay_buffer, check_dtype, train_expert_model
+from src.tasks.task_util import init_replay_buffer, check_dtype, train_expert_model, check_is_unique, train_model
 from src.visualization.visualization import visualize_feature
 
 
@@ -20,14 +20,17 @@ class Task:
         self.model_config = model_config
         self.env = env
 
+        self.init_model_path = 'trained_models/{}_init'.format(task_name)
+
         # set true reward function
         self.env.set_true_reward(env_config['true_reward_func'])
 
         self.expert_path = 'trained_models/{}_expert'.format(task_name)
         self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, env_config['expert_timesteps'])
-        expert_data = init_replay_buffer(self.env, self.expert_model, self.time_window)
+        self.init_model = train_model(env, model_config, self.init_model_path)
+        expert_data = init_replay_buffer(self.env, self.init_model, self.time_window)
 
-        self.reward_model = RewardModel(self.time_window, expert_data, env_config['input_size'])
+        self.reward_model = RewardModel(self.time_window, env_config['input_size'])
 
         # initialize buffer of the reward model
         self.reward_model.buffer.initialize(expert_data)
@@ -88,13 +91,23 @@ class Task:
                 self.evaluator.evaluate(model, self.env)
                 break
 
+            unique_feedback = []
+
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
-                important_features, actions = generate_important_features(important_features, feedback_type, self.time_window, feedback_traj)
+                important_features, actions = generate_important_features(important_features, self.env.state_len, feedback_type, self.time_window, feedback_traj)
+                unique = check_is_unique(unique_feedback, feedback_traj, timesteps, self.time_window, self.env, important_features)
+
+                print('Important features = {}'.format(important_features))
+
+                if not unique:
+                    continue
+                else:
+                    unique_feedback.append((feedback_traj, important_features, timesteps))
 
                 # augment feedback for each trajectory
                 D = augment_feedback_diff(feedback_traj,
                                           signal,
-                                          important_features,
+                                          copy.copy(important_features),
                                           timesteps,
                                           self.env,
                                           self.time_window,

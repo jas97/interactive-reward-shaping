@@ -9,18 +9,18 @@ from src.reward_modelling.reward_nn import RewardModelNN
 
 class RewardModel:
 
-    def __init__(self, time_window, expert_data, input_size):
+    def __init__(self, time_window, input_size):
         self.time_window = time_window
 
         self.buffer = ReplayBuffer(capacity=10000, time_window=self.time_window)
-        self.predictor = RewardModelNN(input_size, expert_data)
+        self.predictor = RewardModelNN(input_size)
 
     def update(self):
         dataset = self.buffer.get_dataset()
         train, test = torch.utils.data.random_split(dataset, [int(0.8*len(dataset)), len(dataset) - int(0.8*len(dataset))])
 
-        self.predictor.train(DataLoader(train, shuffle=True, batch_size=128))
-        self.predictor.evaluate(DataLoader(test, shuffle=True, batch_size=128))
+        self.predictor.train(DataLoader(train, shuffle=True, batch_size=512))
+        self.predictor.evaluate(DataLoader(test, shuffle=True, batch_size=512))
 
     def update_buffer(self, D, signal, important_features, datatype, actions):
         self.buffer.update(D, signal, important_features, datatype, actions)

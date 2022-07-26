@@ -1,6 +1,7 @@
 from highway_env import utils
 
 import numpy as np
+import copy
 from highway_env.envs import highway_env
 from highway_env.vehicle.controller import ControlledVehicle
 
@@ -16,10 +17,11 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
         self.episode = []
 
-        self.lows = np.zeros((25, ))
-        self.highs = np.ones((25, ))
+        self.state_len = 5
+        self.lows = np.zeros((self.state_len, ))
+        self.highs = np.ones((self.state_len, ))
         # speed is in [-1, 1]
-        self.lows[[3, 4, 8, 9, 13, 14, 18, 19, 23, 24]] = -1
+        self.lows[[3, 4]] = -1
         self.action_dtype = 'int'
 
         self.lane = 0
@@ -27,11 +29,16 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
         self.lane_changed = []
 
+        # presence features are immutable
+        self.immutable_features = [0]
+
+        self.discrete_features = [0]
+        self.cont_features = [f for f in range(self.state_len) if f not in self.discrete_features]
+
     def step(self, action):
-        self.episode.append((self.state.flatten(), action))
+        self.episode.append((self.state, action))
 
         curr_lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) else self.vehicle.lane_index[2]
-
         self.state, rew, done, info = super().step(action)
 
         info['true_rew'] = rew
@@ -53,7 +60,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
         aug_rew = 0
         if self.shaping:
-            aug_rew = self.augment_reward(action, self.state.flatten())
+            aug_rew = self.augment_reward(action, self.state)
 
         rew += aug_rew
         rew += lane_change * self.config['lane_change_reward']
@@ -92,13 +99,17 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
     def augment_reward(self, action, state):
         running_rew = 0
-        past = self.episode
+        past = copy.copy(self.episode)
         curr = 1
+
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
-            state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
+            state_enc = encode_trajectory(past[j:], state, curr, self.time_window, self)
 
             rew = self.reward_model.predict(state_enc)
             running_rew += self.lmbda * rew.item()
+
+            if rew.item() < -0.5:
+                print('{} {}'.format(state_enc[[2, 7, 12, 17]], rew.item()))
 
             if curr >= self.time_window:
                 break
@@ -115,4 +126,10 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
 
     def set_true_reward(self, rewards):
         self.true_rewards = rewards
+
+    def random_state(self):
+        return np.random.uniform(self.lows, self.highs, (self.state_len, ))
+
+    def encode_state(self, state):
+        return state[0].flatten()
 

@@ -1,8 +1,6 @@
 import torch
 from torch import nn
 from torch.optim import RMSprop
-from torch.utils.data import DataLoader, TensorDataset
-from torch.utils.data import Dataset
 
 from src.reward_modelling.enc_dec import EncoderDecoder
 
@@ -12,22 +10,24 @@ class RewardNet(nn.Module):
     def __init__(self, input_size):
         super(RewardNet, self).__init__()
 
-        self.fc1 = nn.Linear(input_size, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, 1)
+        self.fc1 = nn.Linear(input_size, 128)
+        self.fc2 = nn.Linear(128, 512)
+        self.fc3 = nn.Linear(512, 128)
+        self.fc4 = nn.Linear(128, 1)
 
         self.relu = nn.ReLU()
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
 
 
 class RewardModelNN:
 
-    def __init__(self, input_size, expert_data):
+    def __init__(self, input_size):
         self.input_size = input_size
         self.enc_size = input_size
 
@@ -76,7 +76,9 @@ class RewardModelNN:
 
             total_loss += loss.item()
 
-        print('MSE loss on test dataset = {}'.format(total_loss / (batch_size*len(dataloader))))
+        mse = total_loss / (batch_size*len(dataloader))
+        print('MSE loss on test dataset = {}'.format(mse))
+        return mse
 
     def predict(self, x):
         self.net.eval()

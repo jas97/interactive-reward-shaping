@@ -6,10 +6,7 @@ from stable_baselines3 import DQN
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
-from src.evaluation.evaluator import Evaluator
-from src.feedback.feedback_processing import encode_trajectory, present_successful_traj
-from src.util import evaluate_policy
-from src.visualization.visualization import visualize_feature
+from src.feedback.feedback_processing import encode_trajectory
 
 
 def check_dtype(env):
@@ -42,10 +39,12 @@ def init_replay_buffer(env, model, time_window):
             else:
                 action, _ = model.predict(obs, deterministic=True)
 
+            obs, rew, done, _ = env.step(action)
+
             past = env.episode
             curr = 1
             for j in range(len(past)-1, -1, -1):
-                enc = encode_trajectory(past[j:], curr, time_window, env)
+                enc = encode_trajectory(past[j:], obs, curr, time_window, env)
 
                 D.append(enc)
 
@@ -54,9 +53,7 @@ def init_replay_buffer(env, model, time_window):
 
                 curr += 1
 
-            obs, rew, done, _ = env.step(action)
-
-    D = torch.tensor(np.array(D))
+    D = torch.tensor(np.vstack(D))
     D = torch.unique(D, dim=0)  # remove duplicates
 
     y_D = np.zeros((len(D), ))
@@ -83,17 +80,48 @@ def train_expert_model(env, env_config, model_config, expert_path, timesteps):
         model.save(expert_path)
 
     # evaluate expert on true reward
-    true_mean_rew = evaluate_policy(model, env, n_ep=100)
-    print('Expert true mean reward = {}'.format(true_mean_rew))
+    # true_mean_rew = evaluate_policy(model, env, n_ep=100)
+    # print('Expert true mean reward = {}'.format(true_mean_rew))
+    #
+    # # evaluate different objectives
+    # evaluator = Evaluator()
+    # avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
+    # print('Expert mean reward for objectives = {}'.format(avg_mo))
 
-    # evaluate different objectives
-    evaluator = Evaluator()
-    avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
-    print('Expert mean reward for objectives = {}'.format(avg_mo))
-
-    best_exp_traj = present_successful_traj(model, env)
-    visualize_feature(best_exp_traj, 2, plot_actions=False, title='Expert\'s lane change')
+    # best_exp_traj = present_successful_traj(model, env)
+    # visualize_feature(best_exp_traj, 2, plot_actions=False, title='Expert\'s lane change')
 
     # reset original config
     env.configure(orig_config)
+    return model
+
+
+def check_is_unique(unique_feedback, feedback_traj, timesteps, time_window, env, important_features):
+    unique = True
+    threshold = 0.05
+
+    for f, imp_f, ts in unique_feedback:
+        if (imp_f == important_features) and (len(f) == len(feedback_traj)):
+
+            enc_1 = encode_trajectory(feedback_traj, None, timesteps, time_window, env)
+            enc_2 = encode_trajectory(f, None, ts, time_window, env)
+
+            distance = np.mean(abs(enc_1[imp_f] - enc_2[important_features]))
+            if distance < threshold:
+                unique = False
+                break
+
+    return unique
+
+def train_model(env, model_config, path):
+    try:
+        model = DQN.load(path, seed=1, env=env)
+        print('Loaded initial model')
+    except FileNotFoundError:
+        print('Training initial model...')
+        model = DQN('MlpPolicy', env, **model_config)
+        model.learn(total_timesteps=20000)
+
+        model.save(path)
+
     return model
