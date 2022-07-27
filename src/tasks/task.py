@@ -12,13 +12,14 @@ from src.visualization.visualization import visualize_feature
 
 class Task:
 
-    def __init__(self, env, model_path, task_name, env_config, model_config, feedback_freq):
+    def __init__(self, env, model_path, task_name, env_config, model_config, feedback_freq, auto):
         self.model_path = model_path
         self.time_window = env_config['time_window']
         self.feedback_freq = feedback_freq
         self.task_name = task_name
         self.model_config = model_config
         self.env = env
+        self.auto = auto
 
         self.init_model_path = 'trained_models/{}_init'.format(task_name)
 
@@ -27,8 +28,8 @@ class Task:
 
         self.expert_path = 'trained_models/{}_expert'.format(task_name)
         self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, env_config['expert_timesteps'])
-        self.init_model = train_model(env, model_config, self.init_model_path)
-        expert_data = init_replay_buffer(self.env, self.init_model, self.time_window)
+        # self.init_model = train_model(env, model_config, self.init_model_path)
+        expert_data = init_replay_buffer(self.env, None, self.time_window)
 
         self.reward_model = RewardModel(self.time_window, env_config['input_size'])
 
@@ -82,9 +83,7 @@ class Task:
                 break
 
             # gather feedback trajectories
-            feedback, cont = gather_feedback(best_traj, self.time_window, disruptive, noisy, prob)
-            for f in feedback:
-                print('Feedback trajectory = {} '.format(f[1]))
+            feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, auto=self.auto)
 
             if not cont:
                 self.reward_model.update()
@@ -97,7 +96,7 @@ class Task:
                 important_features, actions = generate_important_features(important_features, self.env.state_len, feedback_type, self.time_window, feedback_traj)
                 unique = check_is_unique(unique_feedback, feedback_traj, timesteps, self.time_window, self.env, important_features)
 
-                print('Important features = {}'.format(important_features))
+                print('Feedback = {} Important features = {}'.format(feedback_traj, important_features))
 
                 if not unique:
                     continue

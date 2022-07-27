@@ -6,7 +6,9 @@ from stable_baselines3 import DQN
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
+from src.evaluation.evaluator import Evaluator
 from src.feedback.feedback_processing import encode_trajectory
+from src.util import evaluate_policy
 
 
 def check_dtype(env):
@@ -30,7 +32,7 @@ def init_replay_buffer(env, model, time_window):
     print('Initializing replay buffer with env reward...')
     D = []
 
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(500)):
         done = False
         obs = env.reset()
         while not done:
@@ -80,13 +82,13 @@ def train_expert_model(env, env_config, model_config, expert_path, timesteps):
         model.save(expert_path)
 
     # evaluate expert on true reward
-    # true_mean_rew = evaluate_policy(model, env, n_ep=100)
-    # print('Expert true mean reward = {}'.format(true_mean_rew))
-    #
-    # # evaluate different objectives
-    # evaluator = Evaluator()
-    # avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
-    # print('Expert mean reward for objectives = {}'.format(avg_mo))
+    true_mean_rew = evaluate_policy(model, env, n_ep=100)
+    print('Expert true mean reward = {}'.format(true_mean_rew))
+
+    # evaluate different objectives
+    evaluator = Evaluator()
+    avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
+    print('Expert mean reward for objectives = {}'.format(avg_mo))
 
     # best_exp_traj = present_successful_traj(model, env)
     # visualize_feature(best_exp_traj, 2, plot_actions=False, title='Expert\'s lane change')

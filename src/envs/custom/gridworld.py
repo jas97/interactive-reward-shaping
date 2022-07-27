@@ -19,6 +19,7 @@ class Gridworld(gym.Env):
         self.action_dtype = 'int'
 
         self.state = np.zeros((5, ))
+        self.state_len = 5
 
         self.step_pen = -1
         self.turn_pen = 0
@@ -37,6 +38,12 @@ class Gridworld(gym.Env):
             'turn_pen': 0,
             'goal_rew': 1
         }
+
+        self.immutable_features = []
+        self.discrete_features = [0, 1, 2, 3, 4]
+        self.cont_features = []
+
+        self.feedback_id = 0
 
     def step(self, action):
         self.episode.append((self.state, action))
@@ -126,10 +133,13 @@ class Gridworld(gym.Env):
         past = self.episode
         curr = 1
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
-            state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
+            state_enc = encode_trajectory(past[j:], state, curr, self.time_window, self)
 
             rew = self.lmbda * self.reward_model.predict(state_enc)
             running_rew += rew.item()
+
+            if rew.item() < -0.5:
+                print('{} {}'.format(state_enc, rew.item()))
 
             if curr >= self.time_window:
                 break
@@ -204,3 +214,43 @@ class Gridworld(gym.Env):
 
     def set_true_reward(self, rewards):
         self.true_rewards = rewards
+
+    def random_state(self):
+        return np.random.randint(self.lows, self.highs, (self.state_len,))
+
+    def encode_state(self, state):
+        return state
+
+    def get_feedback(self, best_traj):
+        solved = False
+        for t in best_traj:
+            if len(t) < 50:
+                solved = True
+                break
+
+        feedback = []
+        if not solved:
+            for t in best_traj:
+                actions = [a for s, a in t]
+                found = False
+                start = 0
+                end = start + 4
+                while not found and end < len(t):
+                    if sum(actions[start:end]) == 4:
+                        found = True
+                        feedback_traj = t[start:end]
+                        feedback = [('a', feedback_traj, -1, [], 4)]
+
+                    start += 1
+                    end += 1
+
+                if found:
+                    break
+
+            self.feedback_id += 1
+            return feedback, self.feedback_id < 30
+        else:
+            self.feedback_id += 1
+            return [], self.feedback_id < 30
+
+

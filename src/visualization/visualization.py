@@ -35,7 +35,7 @@ def visualize_rewards(rew_dict, title='', xticks=None):
     for rew_name, rew_values in rew_dict.items():
         plt.plot(rew_values)
 
-        plt.title = rew_name
+        plt.title(rew_name)
 
         if xticks is not None:
             plt.xticks = xticks

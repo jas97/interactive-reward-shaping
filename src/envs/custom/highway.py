@@ -133,3 +133,35 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
     def encode_state(self, state):
         return state[0].flatten()
 
+    def get_feedback(self, best_traj):
+        feedback_list = []
+
+        for traj in best_traj:
+            lanes = [s[2] for s, a in traj]
+            changed_lanes = [abs(l[i] - l[i-1]) > 0.1 if i >= 1 else False for i, l in enumerate(lanes)]
+
+            start = 0
+            end = start + 2
+
+            while end < len(changed_lanes):
+                while (end - start) <= self.time_window:
+                    if end >= len(changed_lanes):
+                        break
+
+                    changed = sum(changed_lanes[start:end]) >= 2
+
+                    if changed:
+                        feedback_list.append(('s', traj[start:end], -1, [2], end-start+1))
+                        start = end
+                        end = start + 2
+                        break
+
+                    end += 1
+
+                start += 1
+                end = start + 2
+
+        return feedback_list, True
+
+
+

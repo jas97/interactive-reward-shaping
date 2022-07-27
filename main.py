@@ -38,7 +38,7 @@ def main():
     elif task_name == 'inventory':
         env = Inventory(**env_config)
 
-    task = Task(env, model_path, task_name, env_config, model_config, **task_config)
+    task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
     task.run()
 
 

@@ -59,7 +59,7 @@ def get_ep_traj(model, env):
     return traj, total_rew
 
 
-def gather_feedback(best_traj, time_window, disruptive=False, noisy=False, prob=0):
+def get_input(best_traj):
     print('Gathering user feedback')
     done = False
     feedback_list = []
@@ -95,9 +95,6 @@ def gather_feedback(best_traj, time_window, disruptive=False, noisy=False, prob=
 
         feedback = (feedback_type, f, feedback_signal, important_features, timesteps)
 
-        if disruptive:
-            feedback = disrupt(feedback, prob)
-
         feedback_list.append(feedback)
 
         print('Enter another trajectory (y/n?)')
@@ -107,10 +104,26 @@ def gather_feedback(best_traj, time_window, disruptive=False, noisy=False, prob=
         else:
             done = True
 
+    return feedback_list
+
+
+def gather_feedback(best_traj, time_window, env, disruptive=False, noisy=False, prob=0, auto=False):
+    if auto:
+        feedback_list, cont = env.get_feedback(best_traj)
+    else:
+        feedback_list, cont = get_input(best_traj)
+
     if noisy:
         feedback_list = noise(feedback_list, best_traj, time_window, prob)
+    elif disruptive:
+        disrupted_feedback_list = []
+        for f in feedback_list:
+            disrupted_f = disrupt(f, prob)
+            disrupted_feedback_list.append(disrupted_f)
 
-    return feedback_list, True
+            return disrupted_feedback_list, True
+
+    return feedback_list, cont
 
 
 def noise(feedback_list, best_traj, time_window, prob):
@@ -281,9 +294,9 @@ def generate_important_features(important_features, state_len, feedback_type, ti
 
     traj_len = len(feedback_traj)
     important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
-    # important_features += [time_window * state_len + time_window]  # add timesteps as important
+    important_features += [(time_window + 1) * state_len + time_window]  # add timesteps as important
 
     if actions:
-        important_features += list(np.arange(time_window * state_len, time_window * state_len + traj_len))
+        important_features += list(np.arange((time_window + 1) * state_len, (time_window + 1) * state_len + traj_len))
 
     return important_features, actions
