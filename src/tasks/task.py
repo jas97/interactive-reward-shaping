@@ -1,4 +1,5 @@
 import copy
+import os
 
 from stable_baselines3 import DQN
 
@@ -22,6 +23,7 @@ class Task:
         self.auto = auto
 
         self.init_model_path = 'trained_models/{}_init'.format(task_name)
+        self.eval_path = 'eval/{}/'.format(task_name)
 
         # set true reward function
         self.env.set_true_reward(env_config['true_reward_func'])
@@ -87,16 +89,20 @@ class Task:
 
             if not cont:
                 self.reward_model.update()
-                self.evaluator.evaluate(model, self.env)
+                if not noisy and not disruptive:
+                    title = 'regular.csv'
+                else:
+                    title = 'noisy_{}.csv'.format(prob) if noisy else 'disruptive_{}.csv'.format(prob)
+
+                self.evaluator.evaluate(model, self.env, os.path.join(self.eval_path, title), write=True)
                 break
 
             unique_feedback = []
-
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
                 important_features, actions = generate_important_features(important_features, self.env.state_len, feedback_type, self.time_window, feedback_traj)
                 unique = check_is_unique(unique_feedback, feedback_traj, timesteps, self.time_window, self.env, important_features)
 
-                print('Feedback = {} Important features = {}'.format(feedback_traj, important_features))
+                print('Feedback = {} Important features = {} Signal = {}'.format(feedback_traj, important_features, signal))
 
                 if not unique:
                     continue

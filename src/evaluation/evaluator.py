@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from stable_baselines3 import DQN
 
@@ -18,7 +19,7 @@ class Evaluator:
 
         self.expert_model = expert_model
 
-    def evaluate(self, model, env):
+    def evaluate(self, model, env, path=None, write=False):
         # Evaluate multiple objectives
         rew_values = self.evaluate_MO(model, env, n_episodes=10)
         if self.reward_dict is None:
@@ -29,6 +30,9 @@ class Evaluator:
         # evaluate similarity to the expert
         sim = self.evaluate_similarity(model, self.expert_model, env)
         self.similarities.append(sim)
+
+        if write:
+            self.write_csv(self.reward_dict, path)
 
         print('Rewards: {}'.format(self.reward_dict))
         print('Similarity = {}%'.format(sim*100))
@@ -100,4 +104,8 @@ class Evaluator:
     def reset_reward_dict(self):
         self.reward_dict = None
         self.similarities = []
+
+    def write_csv(self, rew_dict, path):
+        df = pd.DataFrame.from_dict(rew_dict)
+        df.to_csv(path)
 

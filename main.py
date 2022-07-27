@@ -38,8 +38,19 @@ def main():
     elif task_name == 'inventory':
         env = Inventory(**env_config)
 
+    print('Running regular experiments')
     task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
     task.run()
+
+    probs = [0.01, 0.05, 0.1, 0.2, 0.5]
+
+    print('Running noisy experiments')
+    for p in probs:
+        task.run(noisy=True, disruptive=False, prob=p)
+
+    print('Running disruptive experiments')
+    for p in probs:
+        task.run(noisy=False, disruptive=True, prob=p)
 
 
 if __name__ == '__main__':
