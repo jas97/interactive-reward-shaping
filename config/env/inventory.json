@@ -1,0 +1,12 @@
+{
+  "time_window": 5,
+  "input_size": 11,
+  "expert_timesteps": 50000,
+  "true_reward_func": {
+    "item_cost": -1,
+    "item_sale": 2,
+    "hold_cost": 0,
+    "loss_cost": -1,
+    "delivery_cost": -10
+  }
+}
