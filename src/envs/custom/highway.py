@@ -155,8 +155,8 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
                         start = end
                         end = start + 2
                         break
-
-                    end += 1
+                    else:
+                        end += 1
 
                 start += 1
                 end = start + 2

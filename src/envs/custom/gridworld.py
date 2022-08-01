@@ -43,8 +43,6 @@ class Gridworld(gym.Env):
         self.discrete_features = [0, 1, 2, 3, 4]
         self.cont_features = []
 
-        self.feedback_id = 0
-
     def step(self, action):
         self.episode.append((self.state, action))
 
@@ -138,8 +136,8 @@ class Gridworld(gym.Env):
             rew = self.lmbda * self.reward_model.predict(state_enc)
             running_rew += rew.item()
 
-            if rew.item() < -0.5:
-                print('{} {}'.format(state_enc, rew.item()))
+            # if rew.item() < -0.5:
+            #     print('{} {}'.format(state_enc, rew.item()))
 
             if curr >= self.time_window:
                 break
@@ -247,10 +245,8 @@ class Gridworld(gym.Env):
                 if found:
                     break
 
-            self.feedback_id += 1
-            return feedback, self.feedback_id < 30
+            return feedback, True
         else:
-            self.feedback_id += 1
-            return [], self.feedback_id < 30
+            return [], True
 
 

@@ -114,7 +114,7 @@ def gather_feedback(best_traj, time_window, env, disruptive=False, noisy=False, 
         feedback_list, cont = get_input(best_traj)
 
     if noisy:
-        feedback_list = noise(feedback_list, best_traj, time_window, prob)
+        feedback_list = noise(feedback_list, best_traj, env, time_window, prob)
     elif disruptive:
         disrupted_feedback_list = []
         for f in feedback_list:
@@ -126,12 +126,11 @@ def gather_feedback(best_traj, time_window, env, disruptive=False, noisy=False, 
     return feedback_list, cont
 
 
-def noise(feedback_list, best_traj, time_window, prob):
-    add_noisy_sample = np.random.randint(0, 1, prob=prob)
+def noise(feedback_list, best_traj, env, time_window, prob):
+    add_noisy_sample = np.random.choice([0, 1], p=[1-prob, prob])
 
     if add_noisy_sample:
-        state = best_traj[0][0]
-        state_features_len = len(state)
+        state_features_len = env.state_len
 
         rand_traj = np.random.randint(0, len(best_traj))
         f_rand_traj = best_traj[rand_traj]
@@ -141,7 +140,7 @@ def noise(feedback_list, best_traj, time_window, prob):
 
         f_rand_traj = f_rand_traj[rand_start: (rand_start + rand_len)]
 
-        rand_f_type = np.random.randint(0, len(best_traj))
+        rand_f_type = np.random.randint(0, 2)
         rand_f_type = 's' if rand_f_type else 'a'
 
         rand_f_signal = np.random.choice((-1, +1))
@@ -150,20 +149,17 @@ def noise(feedback_list, best_traj, time_window, prob):
 
         important_features = []
         if rand_f_type == 's':
-            important_features = np.random.randint(0, state_features_len)
+            important_features = [np.random.randint(0, state_features_len)]
 
         feedback_list.append((rand_f_type, f_rand_traj, rand_f_signal, important_features, timesteps))
 
-        return feedback_list
-
-    else: # no noisy samples added
-        return feedback_list
+    return feedback_list
 
 
 def disrupt(feedback, prob):
     feedback_type, f, feedback_signal, important_features, timesteps = feedback
 
-    disrupt_sample = np.random.choice([0, 1], p=prob)
+    disrupt_sample = np.random.choice([0, 1], p=[1-prob, prob])
     if disrupt_sample:
         feedback_signal = -feedback_signal
         return (feedback_type, f, feedback_signal, important_features, timesteps)

@@ -1,5 +1,6 @@
 import copy
 import os
+import random
 
 from stable_baselines3 import DQN
 
@@ -44,9 +45,11 @@ class Task:
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-        self.max_iter = 200
+        self.max_iter = 50
 
-    def run(self, noisy=False, disruptive=False, prob=0):
+        self.seed = random.seed(10)
+
+    def run(self, noisy=False, disruptive=False, experiment_type='regular', prob=0):
         finished_training = False
         iteration = 1
         reward_dict = {}
@@ -55,8 +58,8 @@ class Task:
         while not finished_training:
             print('Iteration = {}'.format(iteration))
             try:
-                model_path = self.model_path + '_{}'.format(iteration-1)
-                model = DQN.load(model_path, verbose=1, seed=1, env=self.env)
+                model_path = self.model_path + '/{}_{}/iter_{}'.format(experiment_type, prob, iteration-1)
+                model = DQN.load(model_path, verbose=1, seed=random.randint(0, 100), exploration_fraction=max(0.1, 1-(0.05*iteration)), env=self.env)
                 print('Loaded saved model')
 
                 # if it's not the first iteration reward model should be used
@@ -72,7 +75,7 @@ class Task:
             print('Training DQN for {} timesteps'.format(self.feedback_freq))
 
             model.learn(total_timesteps=self.feedback_freq)
-            model.save(self.model_path + '_{}'.format(iteration))
+            model.save(self.model_path + '/{}_{}/iter_{}'.format(experiment_type, prob, iteration))
 
             # print the best trajectories
             best_traj = present_successful_traj(model, self.env, n_traj=10)
@@ -81,11 +84,11 @@ class Task:
             title = 'Iteration = {}'.format(iteration)
             visualize_feature(best_traj, 2, plot_actions=False, title=title)
 
-            if iteration >= self.max_iter:
-                break
-
             # gather feedback trajectories
             feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, auto=self.auto)
+
+            if iteration >= self.max_iter:
+                cont = False
 
             if not cont:
                 self.reward_model.update()

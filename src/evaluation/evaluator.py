@@ -21,21 +21,21 @@ class Evaluator:
 
     def evaluate(self, model, env, path=None, write=False):
         # Evaluate multiple objectives
-        rew_values = self.evaluate_MO(model, env, n_episodes=10)
+        rew_values = self.evaluate_MO(model, env, n_episodes=100)
         if self.reward_dict is None:
             self.reward_dict = rew_values
         else:
             self.reward_dict = {rn: self.reward_dict[rn] + rew_values[rn] for rn in rew_values.keys()}
 
         # evaluate similarity to the expert
-        sim = self.evaluate_similarity(model, self.expert_model, env)
-        self.similarities.append(sim)
+        # sim = self.evaluate_similarity(model, self.expert_model, env)
+        # self.similarities.append(sim)
 
         if write:
             self.write_csv(self.reward_dict, path)
 
         print('Rewards: {}'.format(self.reward_dict))
-        print('Similarity = {}%'.format(sim*100))
+        # print('Similarity = {}%'.format(sim*100))
 
     def visualize(self, iteration):
         # visualize the effect of shaping on objectives
