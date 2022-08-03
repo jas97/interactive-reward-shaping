@@ -5,6 +5,8 @@ from src.tasks.task import Task
 from src.util import seed_everything, load_config
 import argparse
 
+from src.visualization.visualization import visualize_experiments
+
 
 def main():
     seed_everything()
@@ -40,9 +42,9 @@ def main():
 
     print('Running regular experiments')
     task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
-    task.run( experiment_type='regular')
+    # task.run( experiment_type='regular')
 
-    probs = [0.1, 0.2, 0.3, 0.4, 0.5]
+    probs = [0.01, 0.05, 0.1]
 
     print('Running noisy experiments')
     for p in probs:
@@ -53,6 +55,8 @@ def main():
     for p in probs:
         task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
         task.run(noisy=False, disruptive=True,  experiment_type='disruptive', prob=p)
+
+    visualize_experiments(task_name)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,31 @@
+import os
+
+import pandas
+import pandas as pd
 from matplotlib import pyplot as plt
+
+
+def visualize_experiments(task):
+    path = 'eval/{}/'.format(task)
+    dfs = []
+    experiment_names = []
+
+    for file_name in os.listdir(path):
+        file = os.path.join(path, file_name)
+        df = pd.read_csv(file)
+
+        dfs.append(df)
+        experiment_names.append(file_name.split('.csv')[0])
+
+        col_names = df.columns
+
+    for metric in col_names:
+        for i, df in enumerate(dfs):
+            plt.plot(df['metric'], label=experiment_names[i])
+
+    plt.legend()
+    plt.show()
+
 
 
 def visualize_feature(traj, feature_id, plot_actions=False, title=''):
