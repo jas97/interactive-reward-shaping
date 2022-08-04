@@ -39,12 +39,14 @@ def main():
     elif task_name == 'inventory':
         env = Inventory(**env_config)
 
-    # print('Running regular experiments')
-    # task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
-    # task.run( experiment_type='regular')
-
     probs = [0.01, 0.02, 0.05, 0.1]
     seeds = [0, 1, 2, 3, 4]
+
+    print('Running regular experiments')
+    for s in seeds:
+        seed_everything(s)
+        task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
+        task.run(experiment_type='regular')
 
     print('Running noisy experiments')
     for p in probs:
