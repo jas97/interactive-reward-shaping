@@ -1,4 +1,5 @@
 import copy
+from os.path import exists
 
 import numpy as np
 import pandas as pd
@@ -19,7 +20,7 @@ class Evaluator:
 
         self.expert_model = expert_model
 
-    def evaluate(self, model, env, path=None, write=False):
+    def evaluate(self, model, env, path=None, seed=None, write=False):
         # Evaluate multiple objectives
         rew_values = self.evaluate_MO(model, env, n_episodes=100)
         if self.reward_dict is None:
@@ -27,27 +28,16 @@ class Evaluator:
         else:
             self.reward_dict = {rn: self.reward_dict[rn] + rew_values[rn] for rn in rew_values.keys()}
 
-        # evaluate similarity to the expert
-        # sim = self.evaluate_similarity(model, self.expert_model, env)
-        # self.similarities.append(sim)
-
         if write:
-            self.write_csv(self.reward_dict, path)
+            self.write_csv(self.reward_dict, path, seed)
 
         print('Rewards: {}'.format(self.reward_dict))
-        # print('Similarity = {}%'.format(sim*100))
 
     def visualize(self, iteration):
         # visualize the effect of shaping on objectives
         xs = np.arange(0, self.feedback_freq * iteration, step=self.feedback_freq)
         visualize_rewards(self.reward_dict, title='Average reward objectives with reward shaping', xticks=xs)
 
-        # visualize similarity with the expert model
-        plt.plot(self.similarities)
-        # plt.xticks(xs)
-        plt.xlabel('Time steps')
-        plt.ylabel('Percentage of equal actions')
-        # plt.title('Policy similarity between expert and trained model')
         plt.show()
 
     def evaluate_MO(self, model, env, n_episodes=10):
@@ -105,7 +95,10 @@ class Evaluator:
         self.reward_dict = None
         self.similarities = []
 
-    def write_csv(self, rew_dict, path):
+    def write_csv(self, rew_dict, path, seed):
         df = pd.DataFrame.from_dict(rew_dict)
-        df.to_csv(path)
+        df['seed'] = seed
+        df['iter'] = np.arange(1, len(df) + 1, step=1)
+        header = not exists(path)
+        df.to_csv(path, mode='a', header=header)
 

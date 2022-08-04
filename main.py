@@ -2,6 +2,7 @@ from src.envs.custom.gridworld import Gridworld
 from src.envs.custom.highway import CustomHighwayEnv
 from src.envs.custom.inventory import Inventory
 from src.tasks.task import Task
+import numpy as np
 from src.util import seed_everything, load_config
 import argparse
 
@@ -9,8 +10,6 @@ from src.visualization.visualization import visualize_experiments
 
 
 def main():
-    seed_everything()
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--task')
     args = parser.parse_args()
@@ -40,21 +39,25 @@ def main():
     elif task_name == 'inventory':
         env = Inventory(**env_config)
 
-    print('Running regular experiments')
-    task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
+    # print('Running regular experiments')
+    # task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
     # task.run( experiment_type='regular')
 
-    probs = [0.2, 0.5]
+    probs = [0.01, 0.02, 0.05, 0.1]
+    seeds = [0, 1, 2, 3, 4]
 
     print('Running noisy experiments')
-    # for p in probs:
-    #     task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
-    #     task.run(noisy=True, disruptive=False,  experiment_type='noisy', prob=p)
-
-    print('Running disruptive experiments')
     for p in probs:
-        task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
-        task.run(noisy=False, disruptive=True,  experiment_type='disruptive', prob=p)
+        for s in seeds:
+            seed_everything(s)
+            task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
+            task.run(noisy=True, disruptive=False,  experiment_type='noisy', prob=p)
+
+    # print('Running disruptive experiments')
+    # for p in probs:
+    #     for seed in seeds:
+    #         task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=seed)
+    #         task.run(noisy=False, disruptive=True,  experiment_type='disruptive', prob=p)
 
     visualize_experiments(task_name)
 

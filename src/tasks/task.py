@@ -14,14 +14,18 @@ from src.visualization.visualization import visualize_feature
 
 class Task:
 
-    def __init__(self, env, model_path, task_name, env_config, model_config, feedback_freq, auto):
+    def __init__(self, env, model_path, task_name, env_config, model_config, feedback_freq, auto, seed):
         self.model_path = model_path
         self.time_window = env_config['time_window']
         self.feedback_freq = feedback_freq
         self.task_name = task_name
         self.model_config = model_config
+        self.env_config = env_config
         self.env = env
         self.auto = auto
+        self.seed = seed
+        self.init_type = env_config['init_type']
+        random.seed(seed)
 
         self.init_model_path = 'trained_models/{}_init'.format(task_name)
         self.eval_path = 'eval/{}/'.format(task_name)
@@ -30,14 +34,13 @@ class Task:
         self.env.set_true_reward(env_config['true_reward_func'])
 
         self.expert_path = 'trained_models/{}_expert'.format(task_name)
-        # self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, env_config['expert_timesteps'])
-        self.init_model = train_model(env, model_config, self.init_model_path)
-        expert_data = init_replay_buffer(self.env, self.init_model, self.time_window)
+        self.init_model = train_model(env, model_config, self.init_model_path) if self.init_type == 'train' else None
+        init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'])
 
         self.reward_model = RewardModel(self.time_window, env_config['input_size'])
 
         # initialize buffer of the reward model
-        self.reward_model.buffer.initialize(expert_data)
+        self.reward_model.buffer.initialize(init_data)
 
         # evaluator object
         self.evaluator = Evaluator(self.init_model, self.feedback_freq, copy.copy(env))
@@ -45,9 +48,7 @@ class Task:
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-        self.max_iter = 50
-
-        self.seed = random.seed(10)
+        self.max_iter = 2
 
     def run(self, noisy=False, disruptive=False, experiment_type='regular', prob=0):
         finished_training = False
@@ -69,6 +70,7 @@ class Task:
             except FileNotFoundError:
                 model = DQN('MlpPolicy',
                             self.env,
+                            seed=random.randint(0, 100),
                             **self.model_config)
                 print('First time training the model')
 
@@ -97,7 +99,7 @@ class Task:
                 else:
                     title = 'noisy_{}.csv'.format(prob) if noisy else 'disruptive_{}.csv'.format(prob)
 
-                self.evaluator.evaluate(model, self.env, os.path.join(self.eval_path, title), write=True)
+                self.evaluator.evaluate(model, self.env, os.path.join(self.eval_path, title), self.seed, write=True)
                 break
 
             unique_feedback = []

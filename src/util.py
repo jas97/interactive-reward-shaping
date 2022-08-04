@@ -40,7 +40,7 @@ def load_config(config_path):
     return data
 
 
-def seed_everything(seed=1):
+def seed_everything(seed):
     seed_value = seed
     os.environ['PYTHONHASHSEED'] = str(seed_value)
     random.seed(seed_value)
@@ -49,3 +49,4 @@ def seed_everything(seed=1):
     # tf.random.set_seed(seed_value)
     g = torch.Generator()
     g.manual_seed(seed_value)
+

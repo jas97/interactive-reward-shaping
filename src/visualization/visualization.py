@@ -1,5 +1,5 @@
 import os
-
+import seaborn as sns
 import pandas
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -21,7 +21,7 @@ def visualize_experiments(task):
 
     for metric in col_names:
         for i, df in enumerate(dfs):
-            plt.plot(df['metric'], label=experiment_names[i])
+            sns.lineplot(data=df, x="iter", y=metric, label=experiment_names[i])
 
     plt.legend()
     plt.show()
@@ -50,7 +50,7 @@ def visualize_feature(traj, feature_id, plot_actions=False, title=''):
         for a_vals in actions:
             plt.plot(a_vals)
 
-        plt.title('Action distribution through an episode accross succeful trajectories')
+        plt.title('Action distribution through an episode across successful trajectories')
         plt.xlabel('Time step')
         plt.ylabel('Action')
         plt.show()

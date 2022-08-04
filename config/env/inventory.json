@@ -1,7 +1,9 @@
 {
   "time_window": 5,
   "input_size": 11,
+  "init_type": "train",
   "expert_timesteps": 50000,
+  "init_buffer_ep": 1000,
   "true_reward_func": {
     "item_cost": -1,
     "item_sale": 2,
