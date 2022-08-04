@@ -30,9 +30,9 @@ class Task:
         self.env.set_true_reward(env_config['true_reward_func'])
 
         self.expert_path = 'trained_models/{}_expert'.format(task_name)
-        self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, env_config['expert_timesteps'])
-        # self.init_model = train_model(env, model_config, self.init_model_path)
-        expert_data = init_replay_buffer(self.env, None, self.time_window)
+        # self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, env_config['expert_timesteps'])
+        self.init_model = train_model(env, model_config, self.init_model_path)
+        expert_data = init_replay_buffer(self.env, self.init_model, self.time_window)
 
         self.reward_model = RewardModel(self.time_window, env_config['input_size'])
 
@@ -40,7 +40,7 @@ class Task:
         self.reward_model.buffer.initialize(expert_data)
 
         # evaluator object
-        self.evaluator = Evaluator(self.expert_model, self.feedback_freq, copy.copy(env))
+        self.evaluator = Evaluator(self.init_model, self.feedback_freq, copy.copy(env))
 
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)

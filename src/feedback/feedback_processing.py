@@ -136,7 +136,7 @@ def noise(feedback_list, best_traj, env, time_window, prob):
         f_rand_traj = best_traj[rand_traj]
 
         rand_start = np.random.randint(0, len(f_rand_traj))
-        rand_len = np.random.randint(0, time_window)
+        rand_len = np.random.randint(1, time_window)
 
         f_rand_traj = f_rand_traj[rand_start: (rand_start + rand_len)]
 

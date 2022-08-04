@@ -42,7 +42,7 @@ def main():
     task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True)
     task.run( experiment_type='regular')
 
-    probs = [0.1, 0.2, 0.3, 0.4, 0.5]
+    probs = [0.01, 0.05, 0.1]
 
     print('Running noisy experiments')
     for p in probs:

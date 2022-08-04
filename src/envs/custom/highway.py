@@ -137,8 +137,8 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         feedback_list = []
 
         for traj in best_traj:
-            lanes = [s[2] for s, a in traj]
-            changed_lanes = [abs(l[i] - l[i-1]) > 0.1 if i >= 1 else False for i, l in enumerate(lanes)]
+            lanes = [s.flatten()[2] for s, a in traj]
+            changed_lanes = [abs(lanes[i] - lanes[i-1]) > 0.1 if i >= 1 else False for i, _ in enumerate(lanes)]
 
             start = 0
             end = start + 2
@@ -148,10 +148,10 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
                     if end >= len(changed_lanes):
                         break
 
-                    changed = sum(changed_lanes[start:end]) >= 2
+                    changed = sum(changed_lanes[(start+1):end]) >= 2
 
-                    if changed:
-                        feedback_list.append(('s', traj[start:end], -1, [2], end-start+1))
+                    if changed and changed_lanes[start+1]:
+                        feedback_list.append(('s', traj[start:end], -1, [2], end-start))
                         start = end
                         end = start + 2
                         break

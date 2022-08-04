@@ -32,7 +32,7 @@ def init_replay_buffer(env, model, time_window):
     print('Initializing replay buffer with env reward...')
     D = []
 
-    for i in tqdm(range(500)):
+    for i in tqdm(range(1000)):
         done = False
         obs = env.reset()
         while not done:
