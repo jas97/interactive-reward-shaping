@@ -55,12 +55,6 @@ def main():
             task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
             task.run(noisy=True, disruptive=False,  experiment_type='noisy', prob=p)
 
-    # print('Running disruptive experiments')
-    # for p in probs:
-    #     for seed in seeds:
-    #         task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=seed)
-    #         task.run(noisy=False, disruptive=True,  experiment_type='disruptive', prob=p)
-
     visualize_experiments(task_name)
 
 

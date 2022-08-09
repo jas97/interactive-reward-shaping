@@ -23,8 +23,8 @@ def visualize_experiments(task):
         for i, df in enumerate(dfs):
             sns.lineplot(data=df, x="iter", y=metric, label=experiment_names[i])
 
-    plt.legend()
-    plt.show()
+        plt.legend()
+        plt.show()
 
 def visualize_feature(traj, feature_id, plot_actions=False, title=''):
     feature_vals = []

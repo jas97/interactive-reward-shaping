@@ -45,7 +45,7 @@ class RewardModelNN:
         print('Updating reward model...')
 
         batch_size = train_dataloader.batch_size
-        for i in range(20):
+        for i in range(10):
             total_loss = 0.0
             for x, y in train_dataloader:
                 self.optimizer.zero_grad()
