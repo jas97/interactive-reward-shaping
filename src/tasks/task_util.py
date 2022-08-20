@@ -122,8 +122,12 @@ def train_model(env, model_config, path):
     except FileNotFoundError:
         print('Training initial model...')
         model = DQN('MlpPolicy', env, **model_config)
-        model.learn(total_timesteps=20000)
+        model.learn(total_timesteps=100000)
 
         model.save(path)
+
+    evaluator = Evaluator()
+    avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
+    print('Mean reward for objectives for initial model = {}'.format(avg_mo))
 
     return model

@@ -33,7 +33,6 @@ class Task:
         # set true reward function
         self.env.set_true_reward(env_config['true_reward_func'])
 
-        self.expert_path = 'trained_models/{}_expert'.format(task_name)
         self.init_model = train_model(env, model_config, self.init_model_path) if self.init_type == 'train' else None
         init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'])
 
@@ -48,7 +47,7 @@ class Task:
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-        self.max_iter = 2
+        self.max_iter = 50
 
     def run(self, noisy=False, disruptive=False, experiment_type='regular', prob=0):
         finished_training = False
