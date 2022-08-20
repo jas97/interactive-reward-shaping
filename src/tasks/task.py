@@ -59,7 +59,7 @@ class Task:
         while not finished_training:
             print('Iteration = {}'.format(iteration))
             try:
-                model_path = self.model_path + '/{}_{}/iter_{}'.format(experiment_type, prob, iteration-1)
+                model_path = self.model_path + '/{}_{}/iter_{}_{}'.format(experiment_type, prob, self.seed, iteration-1)
                 exploration_fraction = max(0, 0.8 - 0.1 * (iteration / 5))
                 model = DQN.load(model_path, verbose=0, seed=random.randint(0, 100), exploration_fraction=exploration_fraction, env=self.env)
                 print('Loaded saved model')
@@ -78,7 +78,7 @@ class Task:
             print('Training DQN for {} timesteps'.format(self.feedback_freq))
 
             model.learn(total_timesteps=self.feedback_freq)
-            model.save(self.model_path + '/{}_{}/iter_{}'.format(experiment_type, prob, iteration))
+            model.save(self.model_path + '/{}_{}/iter_{}_{}'.format(experiment_type, prob, self.seed, iteration))
 
             # print the best trajectories
             best_traj = present_successful_traj(model, self.env, n_traj=10)
