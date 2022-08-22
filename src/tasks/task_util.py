@@ -7,23 +7,15 @@ from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
 from src.evaluation.evaluator import Evaluator
-from src.feedback.feedback_processing import encode_trajectory
+from src.feedback.feedback_processing import encode_trajectory, present_successful_traj
 from src.util import evaluate_policy
+from src.visualization.visualization import visualize_feature
 
 
 def check_dtype(env):
-    obs = env.reset().flatten()
-    is_float = np.issubdtype(obs.flatten()[0], np.floating)
-    is_int = np.issubdtype(obs.flatten()[0], np.int)
+    state_dtype = env.state_dtype
 
     action_dtype = env.action_dtype
-
-    if is_int:
-        state_dtype = 'int'
-    elif is_float:
-        state_dtype = 'cont'
-    else:
-        raise TypeError('Unknown type of the observation')
 
     return state_dtype, action_dtype
 
@@ -122,12 +114,14 @@ def train_model(env, model_config, path):
     except FileNotFoundError:
         print('Training initial model...')
         model = DQN('MlpPolicy', env, **model_config)
-        model.learn(total_timesteps=100000)
+        model.learn(total_timesteps=200000)
 
         model.save(path)
 
     evaluator = Evaluator()
     avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
-    print('Mean reward for objectives for initial model = {}'.format(avg_mo))
+    print('Mean reward for objectives = {} for initial model = {}'.format(env.config, avg_mo))
 
+    best_exp_traj = present_successful_traj(model, env)
+    visualize_feature(best_exp_traj, 0, plot_actions=True, title='Expert\'s lane change')
     return model

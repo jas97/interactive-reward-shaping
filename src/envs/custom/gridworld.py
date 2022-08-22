@@ -34,9 +34,11 @@ class Gridworld(gym.Env):
         self.episode = []
 
         self.config = {
-            'step_pen': -1,
-            'turn_pen': 0,
-            'goal_rew': 1
+            "item_cost": -1,
+            "item_sale": 2,
+            "hold_cost": 0,
+            "loss_cost": -1,
+            "delivery_cost": 0
         }
 
         self.immutable_features = []
@@ -136,8 +138,8 @@ class Gridworld(gym.Env):
             rew = self.lmbda * self.reward_model.predict(state_enc)
             running_rew += rew.item()
 
-            # if rew.item() < -0.5:
-            #     print('{} {}'.format(state_enc, rew.item()))
+            if rew.item() < -0.5:
+                print('{} {}'.format(state_enc, rew.item()))
 
             if curr >= self.time_window:
                 break

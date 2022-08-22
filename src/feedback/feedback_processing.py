@@ -104,7 +104,7 @@ def get_input(best_traj):
         else:
             done = True
 
-    return feedback_list
+    return feedback_list, done
 
 
 def gather_feedback(best_traj, time_window, env, disruptive=False, noisy=False, prob=0, auto=False):
@@ -209,8 +209,9 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, time
         rand_D = np.random.randint(lows, highs, size=(length, enc_len))
     else:
         rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
-        if actions:
-            rand_D[:, time_window*state_len:] = augment_actions(traj, length)
+
+    if actions and action_dtype == 'cont':
+        rand_D[:, (time_window*state_len+1):-1] = augment_actions(traj, length)
 
     if not actions:
         # randomize actions
@@ -244,7 +245,7 @@ def augment_actions(feedback_traj, length=2000):
 
     # find similarities to the original trajectory actions using dynamic time warping
     sims = [dtw(actions, traj, keep_internals=True).normalizedDistance for traj in random_traj]
-    top_indices = np.argsort(sims)[-length:]
+    top_indices = np.argsort(sims)[:length]
 
     # filter out only the most similar trajectories
     filtered_traj = random_traj[top_indices]

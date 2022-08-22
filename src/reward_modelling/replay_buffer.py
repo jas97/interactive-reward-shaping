@@ -40,11 +40,11 @@ class ReplayBuffer:
 
     def similar_to_data(self, data, x, important_features, datatype, actions, threshold=0.05):
         state_dtype, action_dtype = datatype
-        if state_dtype == 'int' or (action_dtype == 'int' and actions):
+        if (state_dtype == 'int' and not actions) or (action_dtype == 'int' and actions):
             im_feature_vals = x[important_features]
             exists = torch.where((data[:, important_features] == im_feature_vals).all())
             return len(exists[0]) > 0
-        elif state_dtype == 'cont' or (action_dtype == 'cont' and actions):
+        elif (state_dtype == 'cont' and not actions) or (action_dtype == 'cont' and actions):
             mean_features = torch.mean(data, axis=0)
             similarity = abs(mean_features[important_features] - x[important_features])
 

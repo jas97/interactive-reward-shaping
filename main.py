@@ -37,16 +37,16 @@ def main():
         env.config['lanes_count'] = env_config['lanes_count']
         env.reset()
     elif task_name == 'inventory':
-        env = Inventory(**env_config)
+        env = Inventory(time_window=env_config['time_window'], shaping=False)
 
     probs = [0.1, 0.2, 0.5]
     seeds = [0, 1, 2, 3, 4]
 
-    # print('Running regular experiments')
-    # for s in seeds:
-    #     seed_everything(s)
-    #     task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
-    #     task.run(experiment_type='regular')
+    print('Running regular experiments')
+    for s in seeds:
+        seed_everything(s)
+        task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=False, seed=s)
+        task.run(experiment_type='regular')
     #
     # print('Running noisy experiments')
     # for p in probs:

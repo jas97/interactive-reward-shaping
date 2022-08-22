@@ -42,7 +42,7 @@ class Task:
         self.reward_model.buffer.initialize(init_data)
 
         # evaluator object
-        self.evaluator = Evaluator(self.init_model, self.feedback_freq, copy.copy(env))
+        self.evaluator = Evaluator(self.init_model, self.feedback_freq, env)
 
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
@@ -84,7 +84,7 @@ class Task:
 
             # visualize features and/or actions
             title = 'Iteration = {}'.format(iteration)
-            visualize_feature(best_traj, 2, plot_actions=False, title=title)
+            visualize_feature(best_traj, 0, plot_actions=False, title=title)
 
             # gather feedback trajectories
             feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, auto=self.auto)

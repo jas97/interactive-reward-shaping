@@ -13,17 +13,25 @@ class Inventory(InventoryEnv):
 
         self.episode = []
 
+        self.state_len = 1
         self.lows = np.zeros((1, 0))
         self.highs = np.ones((1, 0))
         self.highs.fill(100)
 
         self.action_dtype = 'cont'
 
-        self.lmbda = 0.1
+        self.lmbda = 1
 
-        self.config = {
+        self.immutable_features = []
+        self.discrete_features = [0, 1, 2, 3, 4]
+        self.cont_features = []
 
-        }
+        self.state_dtype = 'int'
+
+        self.action_dtype = 'cont'
+
+        self.lows = [0]
+        self.highs = [100]
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
@@ -57,7 +65,7 @@ class Inventory(InventoryEnv):
         past = self.episode
         curr = 1
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
-            state_enc = encode_trajectory(past[j:], curr, self.time_window, self)
+            state_enc = encode_trajectory(past[j:], state, curr, self.time_window, self, )
 
             rew = self.reward_model.predict(state_enc)
 
@@ -78,3 +86,15 @@ class Inventory(InventoryEnv):
 
     def render_state(self, state):
         print('Inventory: {}'.format(state))
+
+    def configure(self, rewards):
+        super().configure(rewards)
+
+    def set_true_reward(self, rewards):
+        super().set_true_reward(rewards)
+
+    def random_state(self):
+        return np.random.randint(self.lows, self.highs, (self.state_len,))
+
+    def encode_state(self, state):
+        return state

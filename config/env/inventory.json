@@ -1,6 +1,6 @@
 {
   "time_window": 5,
-  "input_size": 11,
+  "input_size": 12,
   "init_type": "train",
   "expert_timesteps": 50000,
   "init_buffer_ep": 1000,

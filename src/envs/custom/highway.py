@@ -20,12 +20,14 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         self.state_len = 5
         self.lows = np.zeros((self.state_len, ))
         self.highs = np.ones((self.state_len, ))
+
         # speed is in [-1, 1]
         self.lows[[3, 4]] = -1
         self.action_dtype = 'int'
+        self.state_dtype = 'cont'
 
         self.lane = 0
-        self.lmbda = 0.5
+        self.lmbda = 0.2
 
         self.lane_changed = []
 
