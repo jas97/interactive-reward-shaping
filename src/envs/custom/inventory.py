@@ -18,8 +18,6 @@ class Inventory(InventoryEnv):
         self.highs = np.ones((1, 0))
         self.highs.fill(100)
 
-        self.action_dtype = 'cont'
-
         self.lmbda = 1
 
         self.immutable_features = []
@@ -27,11 +25,11 @@ class Inventory(InventoryEnv):
         self.cont_features = []
 
         self.state_dtype = 'int'
-
-        self.action_dtype = 'cont'
+        self.action_dtype = 'int'
 
         self.lows = [0]
         self.highs = [100]
+
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
@@ -44,8 +42,11 @@ class Inventory(InventoryEnv):
             shaped_rew = self.augment_reward(action, self.state.flatten())
             rew += shaped_rew
 
-        info['env_rew'] = rew
-        info['shaped_rew'] = shaped_rew if self.shaping else 0
+        true_rew = info['rewards']['true_rew']
+        orders = [a for s, a in self.episode]
+        freq_orders = sum(np.array(orders[-self.time_window:]) > 0) > self.max_orders
+        true_rew += self.true_rewards['delivery_cost'] * freq_orders
+        info['rewards']['true_rew'] = true_rew
 
         return self.state, rew, done, info
 
@@ -98,3 +99,38 @@ class Inventory(InventoryEnv):
 
     def encode_state(self, state):
         return state
+
+    def get_feedback(self, best_traj):
+        start = 0
+        end = start + self.time_window
+
+        feedback_list = []
+        positive = False
+        negative = False
+        for t in best_traj:
+            actions = [a for s, a in t]
+
+            while end < len(t):
+
+                if positive and negative:
+                    return feedback_list, True
+
+                orders = sum(actions[start:end])
+                if orders >= self.max_orders:
+                    feedback = ('a', t[start:end], -1, ['count(a > 0)>{}'.format(self.max_orders)], self.time_window)
+                    if not negative:
+                        feedback_list.append(feedback)
+                    negative = True
+
+                if orders < self.max_orders:
+                    feedback = ('a', t[start:end], +1, ['count(a > 0)<{}'.format(self.max_orders)], self.time_window)
+                    if not positive:
+                        feedback_list.append(feedback)
+                    positive = True
+
+            start = start + 1
+            end = start + self.time_window
+
+
+
+        return feedback_list, True

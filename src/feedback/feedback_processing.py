@@ -167,7 +167,7 @@ def disrupt(feedback, prob):
         return feedback
 
 
-def augment_feedback_diff(traj, signal, important_features, timesteps, env, time_window, actions, datatype, length=100):
+def augment_feedback_diff(traj, signal, important_features, rules, timesteps, env, time_window, actions, datatype, length=100):
     print('Augmenting feedback...')
 
     state_dtype, action_dtype = datatype
@@ -219,6 +219,9 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, time
 
     D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
 
+    for rule in rules:
+        D = satisfy(D, rule, time_window)
+
     # reward for feedback the signal
     D = torch.tensor(D)
     D = torch.unique(D, dim=0)
@@ -232,6 +235,46 @@ def augment_feedback_diff(traj, signal, important_features, timesteps, env, time
     print('Generated {} augmented samples'.format(len(dataset)))
     return dataset
 
+def satisfy(D, r, time_window):
+    if r['agg'] == 'count':
+        agg_func = np.sum(axis=1)
+
+    if r['quant'] == 'a':
+        start = -(time_window+1)
+
+        satisfies = agg_func(D[start:] > r['filter_num']) > r['limit']
+
+        return D[satisfies]
+
+
+def decode_rule(rule):
+    ''' Decode the rule from string to a dict form '''
+    agg = rule.split9('(')[0]
+    term = rule.split('(')[1].split(')')[0]
+
+    quant = term.split('[><=]')[0]
+    filter_num = int(term.split('[><=]')[1])
+
+    if '<' in term:
+        filter = '<'
+    if '>' in term:
+        filter = '>'
+    if '=' in term:
+        filter = '='
+
+    limit_sign = rule.split(')')[1]
+    limit = int(rule.split(limit_sign)[1])
+
+    decoded = {
+        'agg': agg,
+        'quant': quant,
+        'filter': filter,
+        'filter_num': filter_num,
+        'limit_sign': limit_sign,
+        'limit': limit
+    }
+
+    return decoded
 
 def augment_actions(feedback_traj, length=2000):
     actions = [a for (s, a) in feedback_traj]
@@ -289,11 +332,20 @@ def encode_trajectory(traj, state, timesteps, time_window, env):
 def generate_important_features(important_features, state_len, feedback_type, time_window, feedback_traj):
     actions = feedback_type == 'a'
 
+    imf = []
+    rules = []
+
+    for i in important_features:
+        if isinstance(i, int):
+            imf.append(i)
+
+        if isinstance(i, str):
+            rules.append(decode_rule(i))
+
     traj_len = len(feedback_traj)
-    important_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in important_features]
-    important_features += [(time_window + 1) * state_len + time_window]  # add timesteps as important
+    imf += [(time_window + 1) * state_len + time_window]  # add timesteps as important
 
     if actions:
-        important_features += list(np.arange((time_window + 1) * state_len, (time_window + 1) * state_len + traj_len))
+        imf += list(np.arange((time_window + 1) * state_len, (time_window + 1) * state_len + traj_len))
 
-    return important_features, actions
+    return important_features, actions, rules

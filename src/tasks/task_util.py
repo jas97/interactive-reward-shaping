@@ -10,13 +10,11 @@ from tqdm import tqdm
 
 from src.evaluation.evaluator import Evaluator
 from src.feedback.feedback_processing import encode_trajectory, present_successful_traj
-from src.util import evaluate_policy
 from src.visualization.visualization import visualize_feature
 
 
 def check_dtype(env):
     state_dtype = env.state_dtype
-
     action_dtype = env.action_dtype
 
     return state_dtype, action_dtype
@@ -61,7 +59,7 @@ def init_replay_buffer(env, model, time_window, n_episodes=1000):
     return dataset
 
 
-def train_expert_model(env, env_config, model_config, expert_path, eval_path, feedback_freq, timesteps=int(1e5)):
+def train_expert_model(env, env_config, model_config, expert_path, eval_path, feedback_freq, max_iter, timesteps=int(1e5)):
     orig_config = copy.copy(env.config)
     rewards = env_config['true_reward_func']
     env.configure(rewards)
@@ -71,13 +69,16 @@ def train_expert_model(env, env_config, model_config, expert_path, eval_path, fe
         print('Loaded expert')
     except FileNotFoundError:
         print('Training expert...')
-        expert_eval_path = os.path.join(eval_path, 'model_expert')
+        expert_eval_path = os.path.join(eval_path, 'expert')
         callback = CustomEvalCallback(feedback_freq, env, expert_eval_path)
 
         model = DQN('MlpPolicy', env, **model_config)
-        model.learn(total_timesteps=timesteps, callback=callback)
+        model.learn(total_timesteps=feedback_freq*max_iter, callback=callback)
 
         model.save(expert_path)
+
+    best_traj = present_successful_traj(model, env, n_traj=10)
+    visualize_feature(best_traj, 0, plot_actions=True, title='Model trained on the true reward')
 
     # reset original config
     env.configure(orig_config)
@@ -102,7 +103,7 @@ def check_is_unique(unique_feedback, feedback_traj, timesteps, time_window, env,
     return unique
 
 
-def train_model(env, model_config, path, eval_path, feedback_freq):
+def train_model(env, model_config, path, eval_path, feedback_freq, max_iter):
     try:
         model = DQN.load(path, seed=1, env=env)
         print('Loaded initial model')
@@ -112,7 +113,7 @@ def train_model(env, model_config, path, eval_path, feedback_freq):
 
         print('Training initial model...')
         model = DQN('MlpPolicy', env, **model_config)
-        model.learn(total_timesteps=100000, callback=callback)
+        model.learn(total_timesteps=feedback_freq*max_iter, callback=callback)
 
         model.save(path)
 
@@ -120,7 +121,11 @@ def train_model(env, model_config, path, eval_path, feedback_freq):
     avg_mo = evaluator.evaluate(model, env, os.path.join(eval_path, 'model_env'), seed=0, write=True)
     print('Mean reward for objectives = {} for initial model = {}'.format(env.config, avg_mo))
 
+    best_traj = present_successful_traj(model, env, n_traj=10)
+    visualize_feature(best_traj, 0, plot_actions=True, title='Model trained with environment reward')
+
     return model
+
 
 class CustomEvalCallback(BaseCallback):
 
@@ -130,6 +135,8 @@ class CustomEvalCallback(BaseCallback):
         self.eval_freq = timesteps
         self.env = env
         self.eval_path = eval_path
+
+        self.evaluator = Evaluator()
 
     def _on_step(self) -> bool:
         """
@@ -142,7 +149,9 @@ class CustomEvalCallback(BaseCallback):
         """
 
         if self.num_timesteps % self.eval_freq == 0:
-            evaluator = Evaluator()
-            avg_mo = evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=True)
+            avg_mo = self.evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=False)
             print('Expert mean reward for objectives = {}'.format(avg_mo))
         return True
+
+    def _on_training_end(self) -> None:
+        self.evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=True)

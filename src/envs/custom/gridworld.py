@@ -20,6 +20,7 @@ class Gridworld(gym.Env):
 
         self.state = np.zeros((5, ))
         self.state_len = 5
+        self.state_dtype = 'int'
 
         self.step_pen = -1
         self.turn_pen = 0
@@ -34,11 +35,9 @@ class Gridworld(gym.Env):
         self.episode = []
 
         self.config = {
-            "item_cost": -1,
-            "item_sale": 2,
-            "hold_cost": 0,
-            "loss_cost": -1,
-            "delivery_cost": 0
+            "goal_rew": 1,
+            "step_pen": -1,
+            "turn_pen": 0
         }
 
         self.immutable_features = []

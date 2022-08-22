@@ -1,12 +1,11 @@
 import os
 import seaborn as sns
-import pandas
 import pandas as pd
 from matplotlib import pyplot as plt
 
 
-def visualize_experiments(eval_path):
-    expert_path = os.path.join(eval_path, 'model_expert')
+def visualize_experiments(task_name, eval_path):
+    expert_path = os.path.join(eval_path, 'expert')
     model_env_path = os.path.join(eval_path, 'model_env')
 
     expert_df = pd.read_csv(expert_path)
@@ -27,9 +26,11 @@ def visualize_experiments(eval_path):
     for metric in col_names:
         for i, df in enumerate(dfs):
             sns.lineplot(data=df, x="iter", y=metric, label=experiment_names[i])
-            sns.lineplot(data=expert_df, x='iter', y=metric, label='expert')
-            sns.lineplot(data=model_env_df, x='iter', y=metric, label='model_env')
 
+        sns.lineplot(data=expert_df, x='iter', y=metric)
+        sns.lineplot(data=model_env_df, x='iter', y=metric)
+
+        plt.title(task_name)
         plt.legend()
         plt.show()
 

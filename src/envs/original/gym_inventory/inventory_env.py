@@ -34,11 +34,12 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         self.reset()
 
         self.max_timesteps = 14
+        self.max_orders = 3
 
         self.config = {
             "item_cost": -1,
             "item_sale": 2,
-            "hold_cost": -0.5,
+            "hold_cost": 0,
             "loss_cost": -1,
             "delivery_cost": 0
           }
@@ -73,7 +74,6 @@ class InventoryEnv(gym.Env, utils.EzPickle):
             + profit * self.true_rewards["item_sale"]\
             + demand_loss * self.true_rewards["loss_cost"] \
             + hold_cost * self.true_rewards["hold_cost"]\
-            + delivery_loss * self.true_rewards["delivery_cost"]
 
         return r, item_cost, profit, demand_loss, hold_cost, delivery_loss, true_reward
 

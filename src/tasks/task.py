@@ -8,19 +8,21 @@ from src.evaluation.evaluator import Evaluator
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, \
     generate_important_features
 from src.reward_modelling.reward_model import RewardModel
-from src.tasks.task_util import init_replay_buffer, check_dtype, check_is_unique, train_model, train_expert_model
+from src.tasks.task_util import init_replay_buffer, check_dtype, check_is_unique
 from src.visualization.visualization import visualize_feature
 
 
 class Task:
 
-    def __init__(self, env, model_path, task_name, env_config, model_config, feedback_freq, auto, seed):
+    def __init__(self, env, model_path, model_env, model_expert, task_name, env_config, model_config, feedback_freq, auto, seed):
         self.model_path = model_path
         self.time_window = env_config['time_window']
         self.feedback_freq = feedback_freq
         self.task_name = task_name
         self.model_config = model_config
         self.env_config = env_config
+        self.model_env = model_env
+        self.model_expert = model_expert
         self.env = env
         self.auto = auto
         self.seed = seed
@@ -28,17 +30,6 @@ class Task:
 
         # set seed
         random.seed(seed)
-
-        self.init_model_path = 'trained_models/{}_init'.format(task_name)
-        self.expert_path = 'trained_models/{}_expert'.format(task_name)
-        self.eval_path = 'eval/{}/'.format(task_name)
-
-        # set true reward function
-        self.env.set_true_reward(env_config['true_reward_func'])
-
-        # initialize starting and expert model
-        self.model_env = train_model(env, model_config, self.init_model_path, self.eval_path, self.feedback_freq)
-        self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, self.eval_path, self.feedback_freq)
 
         self.init_model = self.model_env if self.init_type == 'train' else None
         init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'])
@@ -54,7 +45,6 @@ class Task:
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-        self.max_iter = 20
 
     def run(self, noisy=False, disruptive=False, experiment_type='regular', prob=0):
         finished_training = False
@@ -102,7 +92,7 @@ class Task:
             if not cont:
                 self.reward_model.update()
                 if not noisy and not disruptive:
-                    title = 'regular.csv'
+                    title = 'IRS.csv'
                 else:
                     title = 'noisy_{}.csv'.format(prob) if noisy else 'disruptive_{}.csv'.format(prob)
 

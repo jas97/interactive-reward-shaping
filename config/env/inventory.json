@@ -9,6 +9,6 @@
     "item_sale": 2,
     "hold_cost": 0,
     "loss_cost": -1,
-    "delivery_cost": -10
+    "delivery_cost": -0.5
   }
 }
