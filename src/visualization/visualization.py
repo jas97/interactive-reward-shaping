@@ -5,13 +5,18 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-def visualize_experiments(task):
-    path = 'eval/{}/'.format(task)
+def visualize_experiments(eval_path):
+    expert_path = os.path.join(eval_path, 'model_expert')
+    model_env_path = os.path.join(eval_path, 'model_env')
+
+    expert_df = pd.read_csv(expert_path)
+    model_env_df = pd.read_csv(model_env_path)
+
     dfs = []
     experiment_names = []
 
-    for file_name in os.listdir(path):
-        file = os.path.join(path, file_name)
+    for file_name in os.listdir(eval_path):
+        file = os.path.join(eval_path, file_name)
         df = pd.read_csv(file)
 
         dfs.append(df)
@@ -22,6 +27,8 @@ def visualize_experiments(task):
     for metric in col_names:
         for i, df in enumerate(dfs):
             sns.lineplot(data=df, x="iter", y=metric, label=experiment_names[i])
+            sns.lineplot(data=expert_df, x='iter', y=metric, label='expert')
+            sns.lineplot(data=model_env_df, x='iter', y=metric, label='model_env')
 
         plt.legend()
         plt.show()

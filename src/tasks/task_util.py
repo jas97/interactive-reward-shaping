@@ -1,8 +1,10 @@
 import copy
+import os
 
 import numpy as np
 import torch
 from stable_baselines3 import DQN
+from stable_baselines3.common.callbacks import BaseCallback
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
@@ -59,31 +61,23 @@ def init_replay_buffer(env, model, time_window, n_episodes=1000):
     return dataset
 
 
-def train_expert_model(env, env_config, model_config, expert_path, timesteps):
+def train_expert_model(env, env_config, model_config, expert_path, eval_path, feedback_freq, timesteps=int(1e5)):
     orig_config = copy.copy(env.config)
     rewards = env_config['true_reward_func']
     env.configure(rewards)
+
     try:
         model = DQN.load(expert_path, seed=1, env=env)
         print('Loaded expert')
     except FileNotFoundError:
         print('Training expert...')
+        expert_eval_path = os.path.join(eval_path, 'model_expert')
+        callback = CustomEvalCallback(feedback_freq, env, expert_eval_path)
+
         model = DQN('MlpPolicy', env, **model_config)
-        model.learn(total_timesteps=timesteps)
+        model.learn(total_timesteps=timesteps, callback=callback)
 
         model.save(expert_path)
-
-    # evaluate expert on true reward
-    true_mean_rew = evaluate_policy(model, env, n_ep=100)
-    print('Expert true mean reward = {}'.format(true_mean_rew))
-
-    # evaluate different objectives
-    evaluator = Evaluator()
-    avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
-    print('Expert mean reward for objectives = {}'.format(avg_mo))
-
-    # best_exp_traj = present_successful_traj(model, env)
-    # visualize_feature(best_exp_traj, 2, plot_actions=False, title='Expert\'s lane change')
 
     # reset original config
     env.configure(orig_config)
@@ -107,21 +101,48 @@ def check_is_unique(unique_feedback, feedback_traj, timesteps, time_window, env,
 
     return unique
 
-def train_model(env, model_config, path):
+
+def train_model(env, model_config, path, eval_path, feedback_freq):
     try:
         model = DQN.load(path, seed=1, env=env)
         print('Loaded initial model')
     except FileNotFoundError:
+        expert_eval_path = os.path.join(eval_path, 'model_env')
+        callback = CustomEvalCallback(feedback_freq, env, expert_eval_path)
+
         print('Training initial model...')
         model = DQN('MlpPolicy', env, **model_config)
-        model.learn(total_timesteps=200000)
+        model.learn(total_timesteps=100000, callback=callback)
 
         model.save(path)
 
     evaluator = Evaluator()
-    avg_mo = evaluator.evaluate_MO(model, env, n_episodes=100)
+    avg_mo = evaluator.evaluate(model, env, os.path.join(eval_path, 'model_env'), seed=0, write=True)
     print('Mean reward for objectives = {} for initial model = {}'.format(env.config, avg_mo))
 
-    best_exp_traj = present_successful_traj(model, env)
-    visualize_feature(best_exp_traj, 0, plot_actions=True, title='Expert\'s lane change')
     return model
+
+class CustomEvalCallback(BaseCallback):
+
+    def __init__(self, timesteps, env, eval_path):
+        super(CustomEvalCallback, self).__init__(0)
+
+        self.eval_freq = timesteps
+        self.env = env
+        self.eval_path = eval_path
+
+    def _on_step(self) -> bool:
+        """
+        This method will be called by the model after each call to `env.step()`.
+
+        For child callback (of an `EventCallback`), this will be called
+        when the event is triggered.
+
+        :return: (bool) If the callback returns False, training is aborted early.
+        """
+
+        if self.num_timesteps % self.eval_freq == 0:
+            evaluator = Evaluator()
+            avg_mo = evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=True)
+            print('Expert mean reward for objectives = {}'.format(avg_mo))
+        return True

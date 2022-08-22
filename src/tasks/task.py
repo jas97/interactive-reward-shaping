@@ -8,7 +8,7 @@ from src.evaluation.evaluator import Evaluator
 from src.feedback.feedback_processing import present_successful_traj, gather_feedback, augment_feedback_diff, \
     generate_important_features
 from src.reward_modelling.reward_model import RewardModel
-from src.tasks.task_util import init_replay_buffer, check_dtype, check_is_unique, train_model
+from src.tasks.task_util import init_replay_buffer, check_dtype, check_is_unique, train_model, train_expert_model
 from src.visualization.visualization import visualize_feature
 
 
@@ -25,15 +25,22 @@ class Task:
         self.auto = auto
         self.seed = seed
         self.init_type = env_config['init_type']
+
+        # set seed
         random.seed(seed)
 
         self.init_model_path = 'trained_models/{}_init'.format(task_name)
+        self.expert_path = 'trained_models/{}_expert'.format(task_name)
         self.eval_path = 'eval/{}/'.format(task_name)
 
         # set true reward function
         self.env.set_true_reward(env_config['true_reward_func'])
 
-        self.init_model = train_model(env, model_config, self.init_model_path) if self.init_type == 'train' else None
+        # initialize starting and expert model
+        self.model_env = train_model(env, model_config, self.init_model_path, self.eval_path, self.feedback_freq)
+        self.expert_model = train_expert_model(env, env_config, model_config, self.expert_path, self.eval_path, self.feedback_freq)
+
+        self.init_model = self.model_env if self.init_type == 'train' else None
         init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'])
 
         self.reward_model = RewardModel(self.time_window, env_config['input_size'])
@@ -47,7 +54,7 @@ class Task:
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-        self.max_iter = 50
+        self.max_iter = 20
 
     def run(self, noisy=False, disruptive=False, experiment_type='regular', prob=0):
         finished_training = False
@@ -123,7 +130,7 @@ class Task:
                                           self.time_window,
                                           actions,
                                           datatype=(self.state_dtype, self.action_dtype),
-                                          length=2000)
+                                          length=10000)
 
                 # Update reward buffer with augmented data
                 self.reward_model.update_buffer(D,

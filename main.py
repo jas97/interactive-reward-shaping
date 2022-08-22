@@ -45,7 +45,7 @@ def main():
     print('Running regular experiments')
     for s in seeds:
         seed_everything(s)
-        task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=False, seed=s)
+        task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
         task.run(experiment_type='regular')
     #
     # print('Running noisy experiments')
