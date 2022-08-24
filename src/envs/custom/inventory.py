@@ -16,9 +16,9 @@ class Inventory(InventoryEnv):
         self.state_len = 1
         self.lows = np.zeros((1, 0))
         self.highs = np.ones((1, 0))
-        self.highs.fill(100)
+        self.highs.fill(self.n)
 
-        self.lmbda = 1
+        self.lmbda = 0.2
 
         self.immutable_features = []
         self.discrete_features = [0, 1, 2, 3, 4]
@@ -28,8 +28,7 @@ class Inventory(InventoryEnv):
         self.action_dtype = 'int'
 
         self.lows = [0]
-        self.highs = [100]
-
+        self.highs = [self.n]
 
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
@@ -47,6 +46,9 @@ class Inventory(InventoryEnv):
         freq_orders = sum(np.array(orders[-self.time_window:]) > 0) > self.max_orders
         true_rew += self.true_rewards['delivery_cost'] * freq_orders
         info['rewards']['true_rew'] = true_rew
+        info['rewards']['freq_orders'] = freq_orders
+
+        rew += self.config['delivery_cost'] * freq_orders
 
         return self.state, rew, done, info
 
@@ -66,11 +68,14 @@ class Inventory(InventoryEnv):
         past = self.episode
         curr = 1
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
-            state_enc = encode_trajectory(past[j:], state, curr, self.time_window, self, )
+            state_enc = encode_trajectory(past[j:], state, curr, self.time_window, self)
 
             rew = self.reward_model.predict(state_enc)
 
-            running_rew += rew.item()
+            running_rew += self.lmbda * rew.item()
+
+            # if rew.item()< -0.5 or rew.item() > 0.5:
+            #     print('{} {}'.format(state_enc, rew.item()))
 
             if curr >= self.time_window:
                 break
@@ -107,7 +112,8 @@ class Inventory(InventoryEnv):
         feedback_list = []
         positive = False
         negative = False
-        for t in best_traj:
+
+        for i, t in enumerate(best_traj):
             actions = [a for s, a in t]
 
             while end < len(t):
@@ -115,22 +121,22 @@ class Inventory(InventoryEnv):
                 if positive and negative:
                     return feedback_list, True
 
-                orders = sum(actions[start:end])
-                if orders >= self.max_orders:
-                    feedback = ('a', t[start:end], -1, ['count(a > 0)>{}'.format(self.max_orders)], self.time_window)
+                orders = sum(np.array(actions[start:end]) > 0)
+                if orders > self.max_orders:
+                    print('Trajectory id = {} Start = {} End = {}'.format(i, start, end))
+                    feedback = ('a', t[start:end], -1, ['count(a>0)>{}'.format(self.max_orders)], self.time_window)
                     if not negative:
                         feedback_list.append(feedback)
-                    negative = True
+                        negative = True
+                        return feedback_list, True
 
-                if orders < self.max_orders:
-                    feedback = ('a', t[start:end], +1, ['count(a > 0)<{}'.format(self.max_orders)], self.time_window)
-                    if not positive:
-                        feedback_list.append(feedback)
-                    positive = True
+                # if orders <= self.max_orders:
+                #     feedback = ('a', t[start:end], +1, ['count(a>0)<={}'.format(self.max_orders)], self.time_window)
+                #     if not positive:
+                #         feedback_list.append(feedback)
+                #         positive = True
 
-            start = start + 1
-            end = start + self.time_window
-
-
+                start = start + 1
+                end = start + self.time_window
 
         return feedback_list, True

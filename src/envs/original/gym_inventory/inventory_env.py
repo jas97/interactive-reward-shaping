@@ -19,9 +19,9 @@ class InventoryEnv(gym.Env, utils.EzPickle):
     https://sites.ualberta.ca/~szepesva/RLBook.html
     """
 
-    def __init__(self, n=100, lam=10):
+    def __init__(self, n=50, lam=10):
         self.n = n
-        self.action_space = spaces.Discrete(n)
+        self.action_space = spaces.Discrete(int(n/10))
         self.observation_space = spaces.Box(0, n + 1, (1, ), dtype=np.int)
         self.max = n
         self.state = n
@@ -34,7 +34,7 @@ class InventoryEnv(gym.Env, utils.EzPickle):
         self.reset()
 
         self.max_timesteps = 14
-        self.max_orders = 3
+        self.max_orders = 5
 
         self.config = {
             "item_cost": -1,
@@ -68,14 +68,18 @@ class InventoryEnv(gym.Env, utils.EzPickle):
             + profit * self.config["item_sale"]\
             + demand_loss * self.config["loss_cost"]\
             + hold_cost * self.config["hold_cost"]\
-            + delivery_loss * self.config["delivery_cost"]
 
         true_reward = item_cost * self.true_rewards["item_cost"]\
             + profit * self.true_rewards["item_sale"]\
             + demand_loss * self.true_rewards["loss_cost"] \
             + hold_cost * self.true_rewards["hold_cost"]\
 
-        return r, item_cost, profit, demand_loss, hold_cost, delivery_loss, true_reward
+        return r, item_cost*self.config["item_cost"], \
+               profit*self.config["item_sale"],\
+               demand_loss*self.config["loss_cost"], \
+               hold_cost*self.config["hold_cost"],\
+               delivery_loss*self.config["delivery_cost"], \
+               true_reward
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -83,6 +87,9 @@ class InventoryEnv(gym.Env, utils.EzPickle):
 
     def step(self, action):
         assert self.action_space.contains(action)
+
+        action = action*10
+
         obs = self.state[0]
         demand = self.demand()
 

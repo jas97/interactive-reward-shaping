@@ -37,15 +37,12 @@ class RewardModelNN:
         self.criterion = nn.MSELoss()
         self.optimizer = RMSprop(self.net.parameters(), lr=0.001)
 
-        # train, test = torch.utils.data.random_split(expert_data, [int(0.8*len(expert_data)), len(expert_data) - int(0.8*len(expert_data))])
-        # self.enc_dec.train(DataLoader(train), DataLoader(test))
-
     def train(self, train_dataloader):
         self.net.train()
         print('Updating reward model...')
 
         batch_size = train_dataloader.batch_size
-        for i in range(10):
+        for i in range(20):
             total_loss = 0.0
             for x, y in train_dataloader:
                 self.optimizer.zero_grad()

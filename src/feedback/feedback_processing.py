@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from dtw import dtw
+import re
 from torch.utils.data import TensorDataset
 
 
@@ -171,7 +172,6 @@ def augment_feedback_diff(traj, signal, important_features, rules, timesteps, en
     print('Augmenting feedback...')
 
     state_dtype, action_dtype = datatype
-
     state_len = env.state_len
 
     traj_len = len(traj)
@@ -220,7 +220,7 @@ def augment_feedback_diff(traj, signal, important_features, rules, timesteps, en
     D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
 
     for rule in rules:
-        D = satisfy(D, rule, time_window)
+        D, _ = satisfy(D, rule, time_window)
 
     # reward for feedback the signal
     D = torch.tensor(D)
@@ -235,35 +235,36 @@ def augment_feedback_diff(traj, signal, important_features, rules, timesteps, en
     print('Generated {} augmented samples'.format(len(dataset)))
     return dataset
 
-def satisfy(D, r, time_window):
-    if r['agg'] == 'count':
-        agg_func = np.sum(axis=1)
 
+def satisfy(D, r, time_window):
     if r['quant'] == 'a':
         start = -(time_window+1)
 
-        satisfies = agg_func(D[start:] > r['filter_num']) > r['limit']
+        if r['limit_sign'] == '>':
+            satisfies = np.sum(D[:, start:-1] > r['filter_num'], axis=1) > r['limit']
+        elif r['limit_sign'] == '<':
+            satisfies = np.sum(D[:, start:-1] > r['filter_num'], axis=1) < r['limit']
+        elif r['limit_sign'] == '>=':
+            satisfies = np.sum(D[:, start:-1] > r['filter_num'], axis=1) >= r['limit']
+        elif r['limit_sign'] == '<=':
+            satisfies = np.sum(D[:, start:-1] > r['filter_num'], axis=1) <= r['limit']
 
-        return D[satisfies]
+        indices = np.where(satisfies > 0)
+
+        return D[satisfies], indices
 
 
 def decode_rule(rule):
     ''' Decode the rule from string to a dict form '''
-    agg = rule.split9('(')[0]
+    agg = rule.split('(')[0]
     term = rule.split('(')[1].split(')')[0]
 
-    quant = term.split('[><=]')[0]
-    filter_num = int(term.split('[><=]')[1])
+    filter = re.findall("<=|>=|<|>|=", term)[0]
+    filter_num = int(term.split(filter)[1])
+    quant = term.split(filter)[0]
 
-    if '<' in term:
-        filter = '<'
-    if '>' in term:
-        filter = '>'
-    if '=' in term:
-        filter = '='
-
-    limit_sign = rule.split(')')[1]
-    limit = int(rule.split(limit_sign)[1])
+    limit_sign = re.findall("<=|>=|<|>|=", rule)[1]
+    limit = int(rule.split(limit_sign)[-1])
 
     decoded = {
         'agg': agg,
@@ -345,7 +346,8 @@ def generate_important_features(important_features, state_len, feedback_type, ti
     traj_len = len(feedback_traj)
     imf += [(time_window + 1) * state_len + time_window]  # add timesteps as important
 
-    if actions:
+    if actions and len(rules) == 0:
         imf += list(np.arange((time_window + 1) * state_len, (time_window + 1) * state_len + traj_len))
 
-    return important_features, actions, rules
+    print('Rules = {}'.format(rules))
+    return imf, actions, rules

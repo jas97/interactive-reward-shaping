@@ -14,7 +14,7 @@ from src.visualization.visualization import visualize_feature
 
 class Task:
 
-    def __init__(self, env, model_path, model_env, model_expert, task_name, env_config, model_config, feedback_freq, auto, seed):
+    def __init__(self, env, model_path, model_env, model_expert, task_name, max_iter, env_config, model_config, eval_path, feedback_freq, auto, seed):
         self.model_path = model_path
         self.time_window = env_config['time_window']
         self.feedback_freq = feedback_freq
@@ -24,6 +24,8 @@ class Task:
         self.model_env = model_env
         self.model_expert = model_expert
         self.env = env
+        self.max_iter = max_iter
+        self.eval_path = eval_path
         self.auto = auto
         self.seed = seed
         self.init_type = env_config['init_type']
@@ -101,10 +103,8 @@ class Task:
 
             unique_feedback = []
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
-                important_features, actions = generate_important_features(important_features, self.env.state_len, feedback_type, self.time_window, feedback_traj)
+                important_features, actions, rules = generate_important_features(important_features, self.env.state_len, feedback_type, self.time_window, feedback_traj)
                 unique = check_is_unique(unique_feedback, feedback_traj, timesteps, self.time_window, self.env, important_features)
-
-                print('Feedback = {} Important features = {} Signal = {}'.format(feedback_traj, important_features, signal))
 
                 if not unique:
                     continue
@@ -115,6 +115,7 @@ class Task:
                 D = augment_feedback_diff(feedback_traj,
                                           signal,
                                           copy.copy(important_features),
+                                          rules,
                                           timesteps,
                                           self.env,
                                           self.time_window,
@@ -127,7 +128,8 @@ class Task:
                                                 signal,
                                                 important_features,
                                                 (self.state_dtype, self.action_dtype),
-                                                actions)
+                                                actions,
+                                                rules)
 
             # Update reward model with augmented data
             self.reward_model.update()

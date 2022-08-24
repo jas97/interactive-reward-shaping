@@ -22,8 +22,8 @@ class RewardModel:
         self.predictor.train(DataLoader(train, shuffle=True, batch_size=512))
         self.predictor.evaluate(DataLoader(test, shuffle=True, batch_size=512))
 
-    def update_buffer(self, D, signal, important_features, datatype, actions):
-        self.buffer.update(D, signal, important_features, datatype, actions)
+    def update_buffer(self, D, signal, important_features, datatype, actions, rules):
+        self.buffer.update(D, signal, important_features, datatype, actions, rules)
 
     def predict(self, encoding):
         encoding = np.array(encoding).reshape(1, -1)

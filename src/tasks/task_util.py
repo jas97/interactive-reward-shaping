@@ -150,7 +150,6 @@ class CustomEvalCallback(BaseCallback):
 
         if self.num_timesteps % self.eval_freq == 0:
             avg_mo = self.evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=False)
-            print('Expert mean reward for objectives = {}'.format(avg_mo))
         return True
 
     def _on_training_end(self) -> None:
