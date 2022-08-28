@@ -45,7 +45,7 @@ def main():
     env.set_true_reward(env_config['true_reward_func'])
 
     eval_path = 'eval/{}/'.format(task_name)
-    max_iter = 20
+    max_iter = 100
 
     # initialize starting and expert model
     init_model_path = 'trained_models/{}_init'.format(task_name)
@@ -60,10 +60,10 @@ def main():
 
     print('Running regular experiments')
 
-    # for s in seeds:
-    #     seed_everything(s)
-    #     task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config, eval_path, **task_config, auto=True, seed=s)
-    #     task.run(experiment_type='regular')
+    for s in seeds:
+        seed_everything(s)
+        task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config, eval_path, **task_config, auto=True, seed=s)
+        task.run(experiment_type='regular')
 
     # print('Running noisy experiments')
     # for p in probs:

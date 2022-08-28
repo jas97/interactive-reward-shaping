@@ -8,8 +8,8 @@ def visualize_experiments(task_name, eval_path):
     expert_path = os.path.join(eval_path, 'expert')
     model_env_path = os.path.join(eval_path, 'model_env')
 
-    expert_df = pd.read_csv(expert_path)
-    model_env_df = pd.read_csv(model_env_path)
+    # expert_df = pd.read_csv(expert_path)
+    # model_env_df = pd.read_csv(model_env_path)
 
     dfs = []
     experiment_names = []
@@ -27,8 +27,8 @@ def visualize_experiments(task_name, eval_path):
         for i, df in enumerate(dfs):
             sns.lineplot(data=df, x="iter", y=metric, label=experiment_names[i])
 
-        sns.lineplot(data=expert_df, x='iter', y=metric)
-        sns.lineplot(data=model_env_df, x='iter', y=metric)
+        # sns.lineplot(data=expert_df, x='iter', y=metric)
+        # sns.lineplot(data=model_env_df, x='iter', y=metric)
 
         plt.title(task_name)
         plt.legend()
