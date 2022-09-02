@@ -45,7 +45,7 @@ def main():
     env.set_true_reward(env_config['true_reward_func'])
 
     eval_path = 'eval/{}/'.format(task_name)
-    max_iter = 100
+    max_iter = 20
 
     # initialize starting and expert model
     init_model_path = 'trained_models/{}_init'.format(task_name)

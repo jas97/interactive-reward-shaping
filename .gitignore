@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-trained_models/
+trained_models/gridworld
+trained_models/inventory
+trained_models/highway
 
 #trained_models/
 logs/
