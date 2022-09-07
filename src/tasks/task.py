@@ -98,7 +98,7 @@ class Task:
                 else:
                     title = 'noisy_{}.csv'.format(prob) if noisy else 'disruptive_{}.csv'.format(prob)
 
-                self.evaluator.evaluate(model, self.env, os.path.join(self.eval_path, title), self.seed, write=True)
+                self.evaluator.evaluate(model, self.env, path=os.path.join(self.eval_path, title), seed=self.seed, write=True)
                 break
 
             unique_feedback = []
@@ -135,7 +135,7 @@ class Task:
             self.reward_model.update()
 
             # evaluate different rewards
-            self.evaluator.evaluate(model, self.env)
+            self.evaluator.evaluate(model, self.env, feedback_size=len(unique_feedback))
 
             iteration += 1
 

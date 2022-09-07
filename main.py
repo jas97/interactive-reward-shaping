@@ -72,7 +72,6 @@ def main():
     #         task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
     #         task.run(noisy=True, disruptive=False,  experiment_type='noisy', prob=p)
 
-
     visualize_experiments(task_name, eval_path)
 
 

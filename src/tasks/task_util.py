@@ -118,7 +118,7 @@ def train_model(env, model_config, path, eval_path, feedback_freq, max_iter):
         model.save(path)
 
     evaluator = Evaluator()
-    avg_mo = evaluator.evaluate(model, env, os.path.join(eval_path, 'model_env'), seed=0, write=True)
+    avg_mo = evaluator.evaluate(model, env, path=os.path.join(eval_path, 'model_env'), seed=0, write=True)
     print('Mean reward for objectives = {} for initial model = {}'.format(env.config, avg_mo))
 
     best_traj = present_successful_traj(model, env, n_traj=10)
@@ -149,8 +149,8 @@ class CustomEvalCallback(BaseCallback):
         """
 
         if self.num_timesteps % self.eval_freq == 0:
-            avg_mo = self.evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=False)
+            avg_mo = self.evaluator.evaluate(self.model, self.env, path=self.eval_path, seed=0, write=False)
         return True
 
     def _on_training_end(self) -> None:
-        self.evaluator.evaluate(self.model, self.env, self.eval_path, seed=0, write=True)
+        self.evaluator.evaluate(self.model, self.env, path=self.eval_path, seed=0, write=True)

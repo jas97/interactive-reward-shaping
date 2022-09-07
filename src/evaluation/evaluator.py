@@ -20,14 +20,16 @@ class Evaluator:
 
         self.expert_model = expert_model
 
-    def evaluate(self, model, env, path=None, seed=None, write=False):
+    def evaluate(self, model, env, feedback_size=0, path=None, seed=None, write=False):
         # Evaluate multiple objectives
         rew_values = self.evaluate_MO(model, env, n_episodes=100)
         if self.reward_dict is None:
             self.reward_dict = rew_values
+            self.reward_dict['feedback'] = [feedback_size]
         else:
             self.reward_dict = {rn: self.reward_dict[rn] + rew_values[rn] for rn in rew_values.keys()}
 
+        self.reward_dict = {'feedback': [feedback_size] + self.reward_dict['feedback']}
         if write:
             self.write_csv(self.reward_dict, path, seed)
 
