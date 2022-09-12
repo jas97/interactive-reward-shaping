@@ -2,7 +2,6 @@ from src.envs.custom.gridworld import Gridworld
 from src.envs.custom.highway import CustomHighwayEnv
 from src.envs.custom.inventory import Inventory
 from src.tasks.task import Task
-import numpy as np
 
 from src.tasks.task_util import train_expert_model, train_model
 from src.util import seed_everything, load_config
@@ -45,7 +44,7 @@ def main():
     env.set_true_reward(env_config['true_reward_func'])
 
     eval_path = 'eval/{}/'.format(task_name)
-    max_iter = 20
+    max_iter = 100
 
     # initialize starting and expert model
     init_model_path = 'trained_models/{}_init'.format(task_name)
@@ -64,13 +63,6 @@ def main():
         seed_everything(s)
         task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config, eval_path, **task_config, auto=True, seed=s)
         task.run(experiment_type='regular')
-
-    # print('Running noisy experiments')
-    # for p in probs:
-    #     for s in seeds:
-    #         seed_everything(s)
-    #         task = Task(env, model_path, task_name, env_config, model_config, **task_config, auto=True, seed=s)
-    #         task.run(noisy=True, disruptive=False,  experiment_type='noisy', prob=p)
 
     visualize_experiments(task_name, eval_path)
 

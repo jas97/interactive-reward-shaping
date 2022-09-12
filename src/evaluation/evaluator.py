@@ -27,9 +27,11 @@ class Evaluator:
             self.reward_dict = rew_values
             self.reward_dict['feedback'] = [feedback_size]
         else:
+            new_feedback = self.reward_dict['feedback'] + [feedback_size]
             self.reward_dict = {rn: self.reward_dict[rn] + rew_values[rn] for rn in rew_values.keys()}
 
-        self.reward_dict = {'feedback': [feedback_size] + self.reward_dict['feedback']}
+            self.reward_dict['feedback'] = new_feedback
+
         if write:
             self.write_csv(self.reward_dict, path, seed)
 
