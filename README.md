@@ -2,7 +2,7 @@
 
 ## Installation  
 
-```{bash}  
+```shell
 conda create -n irs python=3.7  
 conda activate irs  
 pip install -r requirements.txt  
@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 ## Running Experiments  
 
-```{bash}
+```shell
 python main.py --task gridworld  
 
 python main.py --task highway  
