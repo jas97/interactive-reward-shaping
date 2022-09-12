@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from sklearn.ensemble import RandomForestRegressor
 from torch.utils.data import DataLoader
 
 from src.reward_modelling.replay_buffer import ReplayBuffer
