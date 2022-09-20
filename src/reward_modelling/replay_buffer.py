@@ -62,11 +62,11 @@ class ReplayBuffer:
             return close_indices, np.zeros((len(close_indices), ))
 
         difference = torch.mean(abs(data[:, important_features] - x[important_features]), axis=1)
-        min_diff = torch.min(difference)
+        min_indices = [torch.argmin(difference, dim=-1).item()]
 
-        min_indices = torch.where(difference == min_diff)[0]
+        # min_indices = torch.where(difference == min_diff)[0]
 
-        return min_indices.tolist(), min_diff
+        return min_indices, difference[min_indices[0]].item()
 
     def get_data_loader(self,):
         return DataLoader(self.dataset, batch_size=256, shuffle=True)

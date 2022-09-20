@@ -137,8 +137,8 @@ class Gridworld(gym.Env):
             rew = self.lmbda * self.reward_model.predict(state_enc)
             running_rew += rew.item()
 
-            if rew.item() < -0.5:
-                print('{} {}'.format(state_enc, rew.item()))
+            # if rew.item() < -0.2:
+            # print('{} {}'.format(state_enc, rew.item()))
 
             if curr >= self.time_window:
                 break
@@ -220,7 +220,7 @@ class Gridworld(gym.Env):
     def encode_state(self, state):
         return state
 
-    def get_feedback(self, best_traj):
+    def get_feedback(self, best_traj, expl_type):
         solved = False
         for t in best_traj:
             if len(t) < 50:
@@ -236,9 +236,10 @@ class Gridworld(gym.Env):
                 end = start + 4
                 while not found and end < len(t):
                     if sum(actions[start:end]) == 4:
-                        found = True
+                        if expl_type == 'expl':
+                            found = True
                         feedback_traj = t[start:end]
-                        feedback = [('a', feedback_traj, -1, [], 4)]
+                        feedback.append(('a', feedback_traj, -1, [], 4))
 
                     start += 1
                     end += 1
@@ -249,5 +250,8 @@ class Gridworld(gym.Env):
             return feedback, True
         else:
             return [], True
+
+    def set_lambda(self, l):
+        self.lmbda = l
 
 

@@ -14,7 +14,7 @@ from src.visualization.visualization import visualize_feature
 
 class Task:
 
-    def __init__(self, env, model_path, model_env, model_expert, task_name, max_iter, env_config, model_config, eval_path, feedback_freq, auto, seed):
+    def __init__(self, env, model_path, model_env, model_expert, task_name, max_iter, env_config, model_config, eval_path, feedback_freq, expl_type='expl',auto=False, seed=0):
         self.model_path = model_path
         self.time_window = env_config['time_window']
         self.feedback_freq = feedback_freq
@@ -34,7 +34,7 @@ class Task:
         random.seed(seed)
 
         self.init_model = self.model_env if self.init_type == 'train' else None
-        init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'])
+        init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'], expl_type='expl')
 
         self.reward_model = RewardModel(self.time_window, env_config['input_size'])
 
@@ -47,26 +47,26 @@ class Task:
         # check the dtype of env state space
         self.state_dtype, self.action_dtype = check_dtype(self.env)
 
-
-    def run(self, noisy=False, disruptive=False, experiment_type='regular', prob=0):
+    def run(self, noisy=False, disruptive=False, experiment_type='regular', summary_type='best_summary', expl_type='expl', lmbda=0.2, prob=0):
         finished_training = False
         iteration = 1
-        reward_dict = {}
         self.evaluator.reset_reward_dict()
 
         while not finished_training:
             print('Iteration = {}'.format(iteration))
             try:
-                model_path = self.model_path + '/{}_{}/iter_{}_{}'.format(experiment_type, prob, self.seed, iteration-1)
+                model_path = self.model_path + '/{}_{}_{}/seed_{}_lmbda_{}_iter_{}'.format(experiment_type, summary_type, expl_type, self.seed, lmbda, iteration-1)
                 exploration_fraction = max(0, 0.8 - 0.1 * (iteration / 5))
                 model = DQN.load(model_path, verbose=0, seed=random.randint(0, 100), exploration_fraction=exploration_fraction, env=self.env)
                 print('Loaded saved model')
 
                 # if it's not the first iteration reward model should be used
                 self.env.set_shaping(True)
+                self.env.set_lambda(lmbda)
                 self.env.set_reward_model(self.reward_model)
 
             except FileNotFoundError:
+                self.env.set_lambda(lmbda)
                 model = DQN('MlpPolicy',
                             self.env,
                             seed=random.randint(0, 100),
@@ -76,17 +76,17 @@ class Task:
             print('Training DQN for {} timesteps'.format(self.feedback_freq))
 
             model.learn(total_timesteps=self.feedback_freq)
-            model.save(self.model_path + '/{}_{}/iter_{}_{}'.format(experiment_type, prob, self.seed, iteration))
+            model.save(self.model_path + '/{}_{}_{}/seed_{}_lmbda_{}_iter_{}'.format(experiment_type, summary_type, expl_type, self.seed, lmbda, iteration-1))
 
             # print the best trajectories
-            best_traj = present_successful_traj(model, self.env, n_traj=10)
+            best_traj = present_successful_traj(model, self.env, summary_type, n_traj=10)
 
             # visualize features and/or actions
             title = 'Iteration = {}'.format(iteration)
             visualize_feature(best_traj, 0, plot_actions=False, title=title)
 
             # gather feedback trajectories
-            feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, auto=self.auto)
+            feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, expl_type='expl', auto=self.auto)
 
             if iteration >= self.max_iter:
                 cont = False
@@ -98,13 +98,13 @@ class Task:
                 else:
                     title = 'noisy_{}.csv'.format(prob) if noisy else 'disruptive_{}.csv'.format(prob)
 
-                self.evaluator.evaluate(model, self.env, path=os.path.join(self.eval_path, title), seed=self.seed, write=True)
+                self.evaluator.evaluate(model, self.env, path=os.path.join(self.eval_path, title), lmbda=lmbda, seed=self.seed, write=True)
                 break
 
             unique_feedback = []
             for feedback_type, feedback_traj, signal, important_features, timesteps in feedback:
                 important_features, actions, rules = generate_important_features(important_features, self.env.state_len, feedback_type, self.time_window, feedback_traj)
-                unique = check_is_unique(unique_feedback, feedback_traj, timesteps, self.time_window, self.env, important_features)
+                unique = check_is_unique(unique_feedback, feedback_traj, timesteps, self.time_window, self.env, important_features, expl_type)
 
                 if not unique:
                     continue
@@ -121,6 +121,7 @@ class Task:
                                           self.time_window,
                                           actions,
                                           datatype=(self.state_dtype, self.action_dtype),
+                                          expl_type=expl_type,
                                           length=10000)
 
                 # Update reward buffer with augmented data

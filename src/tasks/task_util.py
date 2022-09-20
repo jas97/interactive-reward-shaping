@@ -20,10 +20,10 @@ def check_dtype(env):
     return state_dtype, action_dtype
 
 
-def init_replay_buffer(env, model, time_window, n_episodes=1000):
+def init_replay_buffer(env, model, time_window, n_episodes=1000, expl_type='expl'):
     print('Initializing replay buffer with env reward...')
     D = []
-
+    n_episodes = n_episodes if expl_type=='expl' else 50
     for i in tqdm(range(n_episodes)):
         done = False
         obs = env.reset()
@@ -85,7 +85,10 @@ def train_expert_model(env, env_config, model_config, expert_path, eval_path, fe
     return model
 
 
-def check_is_unique(unique_feedback, feedback_traj, timesteps, time_window, env, important_features):
+def check_is_unique(unique_feedback, feedback_traj, timesteps, time_window, env, important_features,expl_type):
+    if expl_type == 'no_expl':
+        return True
+
     unique = True
     threshold = 0.05
 

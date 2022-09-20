@@ -54,15 +54,29 @@ def main():
     model_env = train_model(env, model_config, init_model_path, eval_path, task_config['feedback_freq'], max_iter)
     expert_model = train_expert_model(env, env_config, model_config, expert_path, eval_path, task_config['feedback_freq'], max_iter)
 
-    probs = [0.1, 0.2, 0.5]
     seeds = [0, 1, 2, 3, 4]
+    lmbdas = [0.1, 0.2, 0.3, 0.4, 0.5]
 
-    print('Running regular experiments')
+    summary_types = ['best_summary', 'rand_summary']
+    expl_types = ['expl', 'no_expl']
 
-    for s in seeds:
-        seed_everything(s)
-        task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config, eval_path, **task_config, auto=True, seed=s)
-        task.run(experiment_type='regular')
+    for sum in summary_types:
+        for l in lmbdas:
+            for s in seeds:
+                print('Running experiment with {} summary, lambda = {}, seed = {} with explanations'.format(sum, l, s))
+                seed_everything(s)
+                task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
+                            eval_path, **task_config, auto=True, seed=s)
+                task.run(experiment_type='regular', lmbda=l, summary_type=sum, expl_type='expl')
+
+    for e in expl_types:
+        for l in lmbdas:
+            for s in seeds:
+                print('Running experiment with best summary, lambda = {}, seed = {} expl = {}'.format(l, s, e))
+                seed_everything(s)
+                task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
+                            eval_path, **task_config, expl_type=e, auto=True, seed=s)
+                task.run(experiment_type='regular', lmbda=l, summary_type='best_summary', expl_type=e)
 
     visualize_experiments(task_name, eval_path)
 

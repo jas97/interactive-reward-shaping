@@ -20,7 +20,7 @@ class Evaluator:
 
         self.expert_model = expert_model
 
-    def evaluate(self, model, env, feedback_size=0, path=None, seed=None, write=False):
+    def evaluate(self, model, env, feedback_size=0, path=None, seed=None, lmbda=0.2, write=False):
         # Evaluate multiple objectives
         rew_values = self.evaluate_MO(model, env, n_episodes=100)
         if self.reward_dict is None:
@@ -33,7 +33,7 @@ class Evaluator:
             self.reward_dict['feedback'] = new_feedback
 
         if write:
-            self.write_csv(self.reward_dict, path, seed)
+            self.write_csv(self.reward_dict, path, seed, lmbda)
 
         print('Rewards: {}'.format(self.reward_dict))
 
@@ -99,9 +99,10 @@ class Evaluator:
         self.reward_dict = None
         self.similarities = []
 
-    def write_csv(self, rew_dict, path, seed):
+    def write_csv(self, rew_dict, path, seed, lmbda):
         df = pd.DataFrame.from_dict(rew_dict)
         df['seed'] = seed
+        df['lmbda'] = lmbda
         df['iter'] = np.arange(1, len(df) + 1, step=1)
         header = not exists(path)
         df.to_csv(path, mode='a', header=header)

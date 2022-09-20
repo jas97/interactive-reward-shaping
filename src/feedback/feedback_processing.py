@@ -5,21 +5,25 @@ import re
 from torch.utils.data import TensorDataset
 
 
-def present_successful_traj(model, env, n_traj=10):
+def present_successful_traj(model, env, summary_type='best_summary', n_traj=10):
     # gather trajectories
     print('Gathering successful trajectories for partially trained model...')
     traj_buffer, rews = gather_trajectories(model, env, 50)
 
     # filter trajectories
-    top_indices = np.argsort(rews)[-n_traj:]
-    filtered_traj = [traj_buffer[i] for i in top_indices]
-    top_rews = [rews[i] for i in top_indices]
+    if summary_type == 'best_summary':
+        top_indices = np.argsort(rews)[-n_traj:]
+        filtered_traj = [traj_buffer[i] for i in top_indices]
+        top_rews = [rews[i] for i in top_indices]
+    elif summary_type == 'rand_summary':
+        indices = np.random.choice(len(traj_buffer), n_traj)
+        filtered_traj = [traj_buffer[i] for i in indices]
 
-    # play filtered trajectories
-    for j, t in enumerate(filtered_traj):
-        print('------------------\n Trajectory {} \n------------------\n'.format(j))
-        print('Trajectory reward = {}'.format(top_rews[j]))
-        play_trajectory(env, t)
+    # # play filtered trajectories
+    # for j, t in enumerate(filtered_traj):
+    #     print('------------------\n Trajectory {} \n------------------\n'.format(j))
+    #     print('Trajectory reward = {}'.format(top_rews[j]))
+    #     play_trajectory(env, t)
 
     return filtered_traj
 
@@ -108,9 +112,9 @@ def get_input(best_traj):
     return feedback_list, done
 
 
-def gather_feedback(best_traj, time_window, env, disruptive=False, noisy=False, prob=0, auto=False):
+def gather_feedback(best_traj, time_window, env, disruptive=False, noisy=False, prob=0, expl_type='expl', auto=False):
     if auto:
-        feedback_list, cont = env.get_feedback(best_traj)
+        feedback_list, cont = env.get_feedback(best_traj, expl_type=expl_type)
     else:
         feedback_list, cont = get_input(best_traj)
 
@@ -168,59 +172,63 @@ def disrupt(feedback, prob):
         return feedback
 
 
-def augment_feedback_diff(traj, signal, important_features, rules, timesteps, env, time_window, actions, datatype, length=100):
+def augment_feedback_diff(traj, signal, important_features, rules, timesteps, env, time_window, actions, datatype, expl_type='expl', length=100):
     print('Augmenting feedback...')
+    if expl_type == 'expl':
+        state_dtype, action_dtype = datatype
+        state_len = env.state_len
 
-    state_dtype, action_dtype = datatype
-    state_len = env.state_len
+        traj_len = len(traj)
+        traj_enc = encode_trajectory(traj, state=None, timesteps=timesteps, time_window=time_window, env=env)
+        enc_len = traj_enc.shape[0]
 
-    traj_len = len(traj)
-    traj_enc = encode_trajectory(traj, state=None, timesteps=timesteps, time_window=time_window, env=env)
-    enc_len = traj_enc.shape[0]
+        important_features += [im_f + (state_len * i) for i in range(traj_len) for im_f in env.immutable_features]
 
-    important_features += [im_f + (state_len * i) for i in range(traj_len) for im_f in env.immutable_features]
+        # generate mask to preserve important features
+        random_mask = np.ones((length, enc_len))
+        random_mask[:, important_features] = 0
+        inverse_random_mask = 1 - random_mask
 
-    # generate mask to preserve important features
-    random_mask = np.ones((length, enc_len))
-    random_mask[:, important_features] = 0
-    inverse_random_mask = 1 - random_mask
+        D = np.tile(traj_enc, (length, 1))
 
-    D = np.tile(traj_enc, (length, 1))
+        # add noise to important features if they are continuous
+        if state_dtype != 'int':
+            # adding noise for continuous state features
+            D[:, env.cont_features] = D[:, env.cont_features] + np.random.normal(0, 0.001, (length, len(env.cont_features)))
 
-    # add noise to important features if they are continuous
-    if state_dtype != 'int':
-        # adding noise for continuous state features
-        D[:, env.cont_features] = D[:, env.cont_features] + np.random.normal(0, 0.001, (length, len(env.cont_features)))
+        # observation limits
+        lows = list(np.tile(env.lows, (time_window + 1, 1)).flatten())
+        highs = list(np.tile(env.highs, (time_window + 1, 1)).flatten())
 
-    # observation limits
-    lows = list(np.tile(env.lows, (time_window + 1, 1)).flatten())
-    highs = list(np.tile(env.highs, (time_window + 1, 1)).flatten())
+        # action limits
+        lows += [0] * time_window
+        highs += [env.action_space.n] * time_window
 
-    # action limits
-    lows += [0] * time_window
-    highs += [env.action_space.n] * time_window
+        # timesteps limits
+        lows += [1]
+        highs += [time_window]
 
-    # timesteps limits
-    lows += [1]
-    highs += [time_window]
+        # generate matrix of random values within allowed ranges
+        if state_dtype == 'int' or (actions and action_dtype == 'int'):
+            rand_D = np.random.randint(lows, highs, size=(length, enc_len))
+        else:
+            rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
 
-    # generate matrix of random values within allowed ranges
-    if state_dtype == 'int' or (actions and action_dtype == 'int'):
-        rand_D = np.random.randint(lows, highs, size=(length, enc_len))
+        if actions and action_dtype == 'cont':
+            rand_D[:, (time_window*state_len+1):-1] = augment_actions(traj, length)
+
+        if not actions:
+            # randomize actions
+            rand_D[:, -(time_window+1):] = np.random.randint(lows[-(time_window+1):], highs[-(time_window+1):], (length, time_window+1))
+
+        D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
+
+        for rule in rules:
+            D, _ = satisfy(D, rule, time_window)
+
     else:
-        rand_D = np.random.uniform(lows, highs, size=(length, enc_len))
-
-    if actions and action_dtype == 'cont':
-        rand_D[:, (time_window*state_len+1):-1] = augment_actions(traj, length)
-
-    if not actions:
-        # randomize actions
-        rand_D[:, -(time_window+1):] = np.random.randint(lows[-(time_window+1):], highs[-(time_window+1):], (length, time_window+1))
-
-    D = np.multiply(rand_D, random_mask) + np.multiply(inverse_random_mask, D)
-
-    for rule in rules:
-        D, _ = satisfy(D, rule, time_window)
+        traj_enc = encode_trajectory(traj, state=None, timesteps=timesteps, time_window=time_window, env=env)
+        D = np.tile(traj_enc, (1, 1))
 
     # reward for feedback the signal
     D = torch.tensor(D)
