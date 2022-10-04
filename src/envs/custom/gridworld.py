@@ -77,7 +77,7 @@ class Gridworld(gym.Env):
         info = {}
 
         true_rew = self.calculate_true_reward(action, new_state)
-        info['rewards'] = {'goal': int(reached_goal), 'true_reward': true_rew}
+        info['rewards'] = {'goal': int(reached_goal), 'true_reward': true_rew, 'train_rew': rew}
 
         return new_state.flatten(), rew, done, info
 
@@ -134,8 +134,8 @@ class Gridworld(gym.Env):
         for j in range(len(past)-1, -1, -1):  # go backwards in the past
             state_enc = encode_trajectory(past[j:], state, curr, self.time_window, self)
 
-            rew = self.lmbda * self.reward_model.predict(state_enc)
-            running_rew += rew.item()
+            rew = self.lmbda * self.reward_model.predict(state_enc).item()
+            running_rew += rew
 
             # if rew.item() < -0.2:
             # print('{} {}'.format(state_enc, rew.item()))
@@ -229,9 +229,9 @@ class Gridworld(gym.Env):
 
         feedback = []
         if not solved:
+            found = False
             for t in best_traj:
                 actions = [a for s, a in t]
-                found = False
                 start = 0
                 end = start + 4
                 while not found and end < len(t):

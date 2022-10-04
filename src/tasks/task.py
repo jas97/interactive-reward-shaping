@@ -34,7 +34,7 @@ class Task:
         random.seed(seed)
 
         self.init_model = self.model_env if self.init_type == 'train' else None
-        init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'], expl_type='expl')
+        init_data = init_replay_buffer(self.env, self.init_model, self.time_window, self.env_config['init_buffer_ep'], expl_type=expl_type)
 
         self.reward_model = RewardModel(self.time_window, env_config['input_size'])
 
@@ -56,7 +56,7 @@ class Task:
             print('Iteration = {}'.format(iteration))
             try:
                 model_path = self.model_path + '/{}_{}_{}/seed_{}_lmbda_{}_iter_{}'.format(experiment_type, summary_type, expl_type, self.seed, lmbda, iteration-1)
-                exploration_fraction = max(0, 0.8 - 0.1 * (iteration / 5))
+                exploration_fraction = max(0.05, 0.8 - 0.1 * (iteration / 10))
                 model = DQN.load(model_path, verbose=0, seed=random.randint(0, 100), exploration_fraction=exploration_fraction, env=self.env)
                 print('Loaded saved model')
 
@@ -76,7 +76,7 @@ class Task:
             print('Training DQN for {} timesteps'.format(self.feedback_freq))
 
             model.learn(total_timesteps=self.feedback_freq)
-            model.save(self.model_path + '/{}_{}_{}/seed_{}_lmbda_{}_iter_{}'.format(experiment_type, summary_type, expl_type, self.seed, lmbda, iteration-1))
+            model.save(self.model_path + '/{}_{}_{}/seed_{}_lmbda_{}_iter_{}'.format(experiment_type, summary_type, expl_type, self.seed, lmbda, iteration))
 
             # print the best trajectories
             best_traj = present_successful_traj(model, self.env, summary_type, n_traj=10)
@@ -86,7 +86,7 @@ class Task:
             visualize_feature(best_traj, 0, plot_actions=False, title=title)
 
             # gather feedback trajectories
-            feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, expl_type='expl', auto=self.auto)
+            feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, expl_type=expl_type, auto=self.auto)
 
             if iteration >= self.max_iter:
                 cont = False
@@ -130,7 +130,8 @@ class Task:
                                                 important_features,
                                                 (self.state_dtype, self.action_dtype),
                                                 actions,
-                                                rules)
+                                                rules,
+                                                iteration)
 
             # Update reward model with augmented data
             self.reward_model.update()

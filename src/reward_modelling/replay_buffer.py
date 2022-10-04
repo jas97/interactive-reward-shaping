@@ -11,15 +11,16 @@ class ReplayBuffer:
         self.capacity = capacity
         self.time_window = time_window
 
+        self.curr_iter = 0
+
     def initialize(self, dataset):
         self.dataset = dataset
 
         # measures how many times a trajectory was added
         self.marked = np.zeros((len(self.dataset), ))
 
-    def update(self, new_data, signal, important_features, datatype, actions, rules):
+    def update(self, new_data, signal, important_features, datatype, actions, rules, iter):
         print('Updating reward buffer...')
-
         full_dataset = torch.cat([self.dataset.tensors[0], new_data.tensors[0]])
         curr_dataset = self.dataset
 
@@ -28,17 +29,32 @@ class ReplayBuffer:
         y = torch.tensor(y)
 
         threshold = 0.05
-        closest = [self.closest(n, self.dataset.tensors[0], important_features, rules) for n in new_data.tensors[0]]
-        new_marked = [max(self.marked[closest[i][0]]) + 1 if closest[i][1] < threshold else 1 for i, n in enumerate(new_data.tensors[0])]
-        new_marked = torch.tensor(new_marked)
 
-        self.marked = [m + 1 if self.similar_to_data(new_data.tensors[0], self.dataset.tensors[0][i], important_features, datatype, actions, rules) else m for i, m in enumerate(self.marked)]
-        self.marked = torch.tensor(self.marked)
-        self.marked = torch.cat([self.marked, new_marked])
+        if self.curr_iter != iter:
+            closest = [self.closest(n, self.dataset.tensors[0], important_features, rules) for n in new_data.tensors[0]]
+            new_marked = [max(self.marked[closest[i][0]]) + 1 if closest[i][1] < threshold else 1 for i, n in enumerate(new_data.tensors[0])]
+            new_marked = torch.tensor(new_marked)
 
-        y = self.marked * y
+            self.marked = [m + 1 if self.similar_to_data(new_data.tensors[0], self.dataset.tensors[0][i], important_features, datatype, actions, rules) else m for i, m in enumerate(self.marked)]
+            self.marked = torch.tensor(self.marked)
+            self.marked = torch.cat([self.marked, new_marked])
+
+            y = self.marked * y
+        else:
+            closest = [self.closest(n, self.dataset.tensors[0], important_features, rules) for n in new_data.tensors[0]]
+            new_marked = [max(self.marked[closest[i][0]]) if closest[i][1] < threshold else 1 for i, n in
+                          enumerate(new_data.tensors[0])]
+            new_marked = torch.tensor(new_marked)
+
+            self.marked = [m if self.similar_to_data(new_data.tensors[0], self.dataset.tensors[0][i], important_features,
+                                              datatype, actions, rules) else m for i, m in enumerate(self.marked)]
+            self.marked = torch.tensor(self.marked)
+            self.marked = torch.cat([self.marked, new_marked])
+
+            y = self.marked * y
 
         self.dataset = TensorDataset(full_dataset, y)
+        self.curr_iter = iter
 
     def similar_to_data(self, data, x, important_features, datatype, actions, rules, threshold=0.05):
         if len(rules):
@@ -61,7 +77,7 @@ class ReplayBuffer:
             close_data, close_indices = satisfy(np.array(data), rules[0], self.time_window)
             return close_indices, np.zeros((len(close_indices), ))
 
-        difference = torch.mean(abs(data[:, important_features] - x[important_features]), axis=1)
+        difference = torch.mean(abs(data[:, important_features] - x[important_features]) * 1.0, axis=1)
         min_indices = [torch.argmin(difference, dim=-1).item()]
 
         # min_indices = torch.where(difference == min_diff)[0]

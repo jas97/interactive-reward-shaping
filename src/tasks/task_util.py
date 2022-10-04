@@ -23,7 +23,7 @@ def check_dtype(env):
 def init_replay_buffer(env, model, time_window, n_episodes=1000, expl_type='expl'):
     print('Initializing replay buffer with env reward...')
     D = []
-    n_episodes = n_episodes if expl_type=='expl' else 50
+    n_episodes = n_episodes if expl_type == 'expl' else int(n_episodes / 10)
     for i in tqdm(range(n_episodes)):
         done = False
         obs = env.reset()
