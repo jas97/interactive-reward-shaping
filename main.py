@@ -1,6 +1,9 @@
+from stable_baselines3 import DQN
+
 from src.envs.custom.gridworld import Gridworld
 from src.envs.custom.highway import CustomHighwayEnv
 from src.envs.custom.inventory import Inventory
+from src.evaluation.evaluator import Evaluator
 from src.tasks.task import Task
 
 from src.tasks.task_util import train_expert_model, train_model
@@ -57,26 +60,20 @@ def main():
     seeds = [0, 1, 2]
     lmbdas = [0.1, 0.05, 0.01]
 
-    summary_types = ['best_summary', 'rand_summary']
-    expl_types = ['expl', 'no_expl']
+    # evaluate experiments
+    experiments = [('best_summary', 'expl'), ('best_summary', 'expl'), ('rand_summary', 'no_expl')]
 
-    for sum in summary_types:
-        for l in lmbdas:
-            for s in seeds:
-                print('Running experiment with {} summary, lambda = {}, seed = {} with explanations'.format(sum, l, s))
+    for sum, expl in experiments:
+        for s in seeds:
+            for l in lmbdas:
+                print('Running experiment with summary = {}, expl = {}, lambda = {}, seed = {}'.format(sum, expl, l, s))
                 seed_everything(s)
-                task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
-                            eval_path, **task_config, auto=True, seed=s)
-                task.run(experiment_type='regular', lmbda=l, summary_type=sum, expl_type='expl')
 
-    for e in expl_types:
-        for l in lmbdas:
-            for s in seeds:
-                print('Running experiment with best summary, lambda = {}, seed = {} expl = {}'.format(l, s, e))
-                seed_everything(s)
+                eval_path = 'eval/{}/{}_{}/'.format(task_name, sum, expl)
+
                 task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
-                            eval_path, **task_config, expl_type=e, auto=True, seed=s)
-                task.run(experiment_type='regular', lmbda=l, summary_type='best_summary', expl_type=e)
+                            eval_path, **task_config, expl_type=expl, auto=True, seed=s)
+                task.run(experiment_type='regular', lmbda=l, summary_type='best_summary', expl_type=expl)
 
 
 if __name__ == '__main__':
