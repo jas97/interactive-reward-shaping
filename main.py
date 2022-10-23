@@ -44,7 +44,7 @@ def main():
     env.set_true_reward(env_config['true_reward_func'])
 
     eval_path = 'eval/{}/'.format(task_name)
-    max_iter = 100
+    max_iter = 50
 
     # initialize starting and expert model
     init_model_path = 'trained_models/{}_init'.format(task_name)
@@ -55,19 +55,19 @@ def main():
     expert_model = train_expert_model(env, env_config, model_config, expert_path, eval_path, task_config['feedback_freq'], max_iter)
 
     seeds = [0, 1, 2]
-    lmbdas = [0.1, 0.2, 0.3]
+    lmbdas = [0.1, 0.05, 0.01]
 
     summary_types = ['best_summary', 'rand_summary']
-    expl_types = ['no_expl']
+    expl_types = ['expl', 'no_expl']
 
-    # for sum in summary_types:
-    #     for l in lmbdas:
-    #         for s in seeds:
-    #             print('Running experiment with {} summary, lambda = {}, seed = {} with explanations'.format(sum, l, s))
-    #             seed_everything(s)
-    #             task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
-    #                         eval_path, **task_config, auto=True, seed=s)
-    #             task.run(experiment_type='regular', lmbda=l, summary_type=sum, expl_type='expl')
+    for sum in summary_types:
+        for l in lmbdas:
+            for s in seeds:
+                print('Running experiment with {} summary, lambda = {}, seed = {} with explanations'.format(sum, l, s))
+                seed_everything(s)
+                task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
+                            eval_path, **task_config, auto=True, seed=s)
+                task.run(experiment_type='regular', lmbda=l, summary_type=sum, expl_type='expl')
 
     for e in expl_types:
         for l in lmbdas:
@@ -77,8 +77,6 @@ def main():
                 task = Task(env, model_path, model_env, expert_model, task_name, max_iter, env_config, model_config,
                             eval_path, **task_config, expl_type=e, auto=True, seed=s)
                 task.run(experiment_type='regular', lmbda=l, summary_type='best_summary', expl_type=e)
-
-    visualize_experiments(task_name, eval_path)
 
 
 if __name__ == '__main__':

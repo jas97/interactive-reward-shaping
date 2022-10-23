@@ -82,8 +82,8 @@ class Task:
             best_traj = present_successful_traj(model, self.env, summary_type, n_traj=10)
 
             # visualize features and/or actions
-            title = 'Iteration = {}'.format(iteration)
-            visualize_feature(best_traj, 0, plot_actions=False, title=title)
+            # title = 'Iteration = {}'.format(iteration)
+            # visualize_feature(best_traj, 0, plot_actions=False, title=title)
 
             # gather feedback trajectories
             feedback, cont = gather_feedback(best_traj, self.time_window, self.env, disruptive, noisy, prob, expl_type=expl_type, auto=self.auto)

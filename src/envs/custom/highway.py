@@ -37,6 +37,8 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         self.discrete_features = [0]
         self.cont_features = [f for f in range(self.state_len) if f not in self.discrete_features]
 
+        self.max_changed_lanes = 3
+
     def step(self, action):
         self.episode.append((self.state, action))
 
@@ -57,7 +59,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         right_lane_rew = self.config["right_lane_reward"] * self.lane / max(len(neighbours) - 1, 1)
         speed_rew = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
-        lane_change = sum(self.lane_changed[-self.time_window:]) >= 2
+        lane_change = sum(self.lane_changed[-self.time_window:]) >= self.max_changed_lanes
         true_reward = self.calculate_true_reward(rew, lane_change)
 
         aug_rew = 0
@@ -110,9 +112,6 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
             rew = self.reward_model.predict(state_enc)
             running_rew += self.lmbda * rew.item()
 
-            if rew.item() < -0.5:
-                print('{} {}'.format(state_enc[[2, 7, 12, 17]], rew.item()))
-
             if curr >= self.time_window:
                 break
 
@@ -135,7 +134,7 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
     def encode_state(self, state):
         return state[0].flatten()
 
-    def get_feedback(self, best_traj):
+    def get_feedback(self, best_traj, expl_type):
         feedback_list = []
 
         for traj in best_traj:
@@ -150,20 +149,25 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
                     if end >= len(changed_lanes):
                         break
 
-                    changed = sum(changed_lanes[(start+1):end]) >= 2
+                    changed = sum(changed_lanes[(start+1):end]) >= self.max_changed_lanes
 
                     if changed and changed_lanes[start+1]:
-                        feedback_list.append(('s', traj[start:end], -1, [2], end-start))
+                        feedback_list.append(('s', traj[start:end], -1, [2 + (i*self.state_len) for i in range(0, end-start)], end-start))
                         start = end
                         end = start + 2
-                        break
+                        if expl_type == 'expl':
+                            break
                     else:
                         end += 1
 
                 start += 1
                 end = start + 2
 
+        print('Feedback: {}'.format(feedback_list))
         return feedback_list, True
+
+    def set_lambda(self, l):
+        self.lmbda = l
 
 
 

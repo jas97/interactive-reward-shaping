@@ -182,7 +182,9 @@ def augment_feedback_diff(traj, signal, important_features, rules, timesteps, en
         traj_enc = encode_trajectory(traj, state=None, timesteps=timesteps, time_window=time_window, env=env)
         enc_len = traj_enc.shape[0]
 
-        important_features += [im_f + (state_len * i) for i in range(traj_len) for im_f in env.immutable_features]
+        immutable_features = [im_f + (state_len * i) for i in range(traj_len) for im_f in env.immutable_features]
+
+        important_features += immutable_features
 
         # generate mask to preserve important features
         random_mask = np.ones((length, enc_len))
