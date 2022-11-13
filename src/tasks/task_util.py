@@ -66,10 +66,10 @@ def train_expert_model(env, env_config, model_config, expert_path, eval_path, fe
 
     try:
         model = DQN.load(expert_path, seed=1, env=env)
-        print('Loaded expert')
+        print('Loaded expert.csv')
     except FileNotFoundError:
-        print('Training expert...')
-        expert_eval_path = os.path.join(eval_path, 'expert')
+        print('Training expert.csv...')
+        expert_eval_path = os.path.join(eval_path, 'expert.csv')
         callback = CustomEvalCallback(feedback_freq, env, expert_eval_path)
 
         model = DQN('MlpPolicy', env, **model_config)
@@ -111,7 +111,7 @@ def train_model(env, model_config, path, eval_path, feedback_freq, max_iter):
         model = DQN.load(path, seed=1, env=env)
         print('Loaded initial model')
     except FileNotFoundError:
-        expert_eval_path = os.path.join(eval_path, 'model_env')
+        expert_eval_path = os.path.join(eval_path, 'model_env.csv')
         callback = CustomEvalCallback(feedback_freq, env, expert_eval_path)
 
         print('Training initial model...')
@@ -121,7 +121,7 @@ def train_model(env, model_config, path, eval_path, feedback_freq, max_iter):
         model.save(path)
 
     evaluator = Evaluator()
-    avg_mo = evaluator.evaluate(model, env, path=os.path.join(eval_path, 'model_env'), seed=0, write=True)
+    avg_mo = evaluator.evaluate(model, env, path=os.path.join(eval_path, 'model_env.csv'), seed=0, write=True)
     print('Mean reward for objectives = {} for initial model = {}'.format(env.config, avg_mo))
 
     best_traj = present_successful_traj(model, env, n_traj=10)

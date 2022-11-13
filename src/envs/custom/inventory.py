@@ -30,6 +30,10 @@ class Inventory(InventoryEnv):
         self.lows = [0]
         self.highs = [self.n]
 
+        self.feature_names = ['stock', 'action']
+        self.feature_names = [fn + '_{}'.format(i) for fn in self.feature_names for i in
+                              range(self.time_window - 1)] + self.feature_names[:-1]
+
     def step(self, action):
         self.episode.append((self.state.flatten(), action))
 
@@ -74,9 +78,6 @@ class Inventory(InventoryEnv):
 
             running_rew += self.lmbda * rew.item()
 
-            # if rew.item()< -0.5 or rew.item() > 0.5:
-            #     print('{} {}'.format(state_enc, rew.item()))
-
             if curr >= self.time_window:
                 break
 
@@ -105,38 +106,31 @@ class Inventory(InventoryEnv):
     def encode_state(self, state):
         return state
 
-    def get_feedback(self, best_traj):
+    def get_feedback(self, best_traj, expl_type):
         start = 0
         end = start + self.time_window
 
         feedback_list = []
-        positive = False
-        negative = False
 
         for i, t in enumerate(best_traj):
             actions = [a for s, a in t]
 
             while end < len(t):
 
-                if positive and negative:
-                    return feedback_list, True
-
                 orders = sum(np.array(actions[start:end]) > 0)
                 if orders > self.max_orders:
                     print('Trajectory id = {} Start = {} End = {}'.format(i, start, end))
                     feedback = ('a', t[start:end], -1, ['count(a>0)>{}'.format(self.max_orders)], self.time_window)
-                    if not negative:
-                        feedback_list.append(feedback)
-                        negative = True
-                        return feedback_list, True
+                    feedback_list.append(feedback)
 
-                # if orders <= self.max_orders:
-                #     feedback = ('a', t[start:end], +1, ['count(a>0)<={}'.format(self.max_orders)], self.time_window)
-                #     if not positive:
-                #         feedback_list.append(feedback)
-                #         positive = True
+                    if expl_type == 'expl':
+                        return feedback_list, True
 
                 start = start + 1
                 end = start + self.time_window
 
         return feedback_list, True
+
+
+    def set_lambda(self, l):
+        self.lmbda = l

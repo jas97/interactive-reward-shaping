@@ -259,9 +259,13 @@ def satisfy(D, r, time_window):
         elif r['limit_sign'] == '<=':
             satisfies = np.sum(D[:, start:-1] > r['filter_num'], axis=1) <= r['limit']
 
-        indices = np.where(satisfies > 0)
+        max_index = torch.argmax(torch.tensor(satisfies, dtype=int), dim=-1).item()
+        max_value = satisfies[max_index]
 
-        return D[satisfies], indices
+        if max_value > 0:
+            return D[satisfies], [max_index]
+        else:
+            return D[satisfies], []
 
 
 def decode_rule(rule):
