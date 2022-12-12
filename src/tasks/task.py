@@ -136,16 +136,7 @@ class Task:
             # evaluate different rewards
             self.evaluator.evaluate(model, self.env, feedback_size=len(unique_feedback))
 
-            if iteration > 1:
-                model_path = self.model_path + '/{}_{}_{}/seed_{}_lmbda_{}_iter_{}'.format(experiment_type, summary_type, expl_type, self.seed, lmbda, iteration-1)
-                prev_model = DQN.load(model_path, verbose=0, seed=random.randint(0, 100), exploration_fraction=0, env=self.env)
-
-                give_rule_feedback(prev_model, model, self.env)
-
             iteration += 1
-
-        # # visualize different rewards
-        self.evaluator.visualize(iteration)
 
 
 

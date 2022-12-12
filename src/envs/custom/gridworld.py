@@ -1,3 +1,4 @@
+import copy
 import random
 
 import gym
@@ -37,15 +38,16 @@ class Gridworld(gym.Env):
         self.config = {
             "goal_rew": 1,
             "step_pen": -1,
-            "turn_pen": 0
+            "turn_pen": -1
         }
 
         self.immutable_features = []
         self.discrete_features = [0, 1, 2, 3, 4]
         self.cont_features = []
 
-        self.feature_names = ['agent_x', 'agent_y', 'goal_x', 'goal_y', 'orient', 'action']
-        self.feature_names = [fn + '_{}'.format(i) for fn in self.feature_names for i in range(self.time_window - 1)] + self.feature_names[:-1]
+        self.feature_names = ['agent_x', 'agent_y', 'goal_x', 'goal_y', 'orient']
+        self.feature_names = [fn + '_{}'.format(i) for i in range(self.time_window) for fn in self.feature_names] + \
+                             ['action_{}'.format(i) for i in range(self.time_window-1)]
 
     def step(self, action):
         self.episode.append((self.state, action))
@@ -200,6 +202,9 @@ class Gridworld(gym.Env):
 
         rendering += '---------------'
         print(rendering)
+
+    def set_state(self, s):
+        self.state = copy.copy(s)
 
     def set_reward_model(self, rm):
         self.reward_model = rm

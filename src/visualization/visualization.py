@@ -94,11 +94,14 @@ def visualize_best_experiment(path, expert_path, model_env_path, task_name, titl
         expert_df[metric] = expert_end_vals[metric].values[0]
         model_env_df[metric] = baseline_end_vals[metric].values[0]
 
+        y_label = r'$R_{true}$' if metric == 'True reward' else metric
+
         sns.lineplot(df, x="Iteration", y=metric, hue="lmbda", palette=pal)
-        sns.lineplot(data=expert_df, x='Iteration', y=metric, label='expert')
-        sns.lineplot(data=model_env_df, x='Iteration', y=metric, label='baseline')
+        sns.lineplot(data=expert_df, x='Iteration', y=metric, label=r'$M_{true}$')
+        sns.lineplot(data=model_env_df, x='Iteration', y=metric, label=r'$M_{env}$')
 
         plt.title(title)
+        plt.ylabel(y_label)
         plt.legend(loc='upper left')
         plt.show()
 
@@ -120,6 +123,7 @@ def visualize_best_vs_rand_summary(best_summary_path, rand_summary_path, lmbdas,
 
     for i, df in enumerate(dfs):
         partials = []
+        print('-----------------------------------------')
         for s in seeds:
             for l in lmbdas:
                 partial_df = df[(df['seed'] == s) & (df['lmbda'] == l)]
@@ -127,21 +131,27 @@ def visualize_best_vs_rand_summary(best_summary_path, rand_summary_path, lmbdas,
                 partial_df = partial_df.assign(cummulative_feedback=get_cummulative_feedback(feedback))
                 partials.append(partial_df)
 
+                print('Seed = {} Lambda = {} Total feedback = {}'.format(s, l, sum(partial_df['feedback'])))
+
         dfs[i] = pd.concat(partials)
 
     df_best, df_rand = dfs
 
     for l in lmbdas:
-        for metric in df_best.columns:
-            pass
-            sns.lineplot(data=df_best[df_best['lmbda'] == l], x='Iteration', y=metric, label='Best summary')
-            sns.lineplot(data=df_rand[df_rand['lmbda'] == l], x='Iteration', y=metric, label='Random summary')
+        # for metric in df_best.columns:
+        #     y_label = r'$R_{true}$' if metric == 'True reward' else metric
+        #
+        #     sns.lineplot(data=df_best[df_best['lmbda'] == l], x='Iteration', y=metric, label='Best summary')
+        #     sns.lineplot(data=df_rand[df_rand['lmbda'] == l], x='Iteration', y=metric, label='Random summary')
+        #
+        #     title_tmp = title + ', \u03BB = {}'.format(l)
+        #
+        #     plt.title(title_tmp)
+        #     plt.ylabel(y_label)
+        #     plt.legend(loc='upper left')
+        #     plt.show()
 
-            title =  '{} \u03BB = {}'.format(task_name, l)
-
-            plt.title(title)
-            plt.legend(loc='upper left')
-            plt.show()
+        print('')
 
         sns.lineplot(data=df_best[df_best['lmbda'] == l],
                      x='Iteration',
