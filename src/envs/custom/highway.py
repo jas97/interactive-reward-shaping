@@ -43,7 +43,9 @@ class CustomHighwayEnv(highway_env.HighwayEnvFast):
         self.episode.append((self.state, action))
 
         curr_lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) else self.vehicle.lane_index[2]
-        self.state, rew, done, info = super().step(action)
+        self.state, rew, done,truncated, info = super().step(action)
+        if truncated:
+            done = True
 
         info['true_rew'] = rew
 

@@ -1,0 +1,5 @@
+,rule,total_support,agree,disagree,unique_states,agree_percentage,disagree_percentage
+0,car_infront_speed == 3,1212,1113,99,224,0.9183168316831684,0.08168316831683169
+1,x_right_car == 0,12330,8686,3644,569,0.7044606650446067,0.29553933495539336
+2,car_infront_dir == 99 and dir_left_car == 1,1641,1411,230,124,0.8598415600243754,0.14015843997562463
+3,dist_to_car_in_front == 2 and dir_left_car == 1,1438,1242,196,181,0.8636995827538247,0.13630041724617525

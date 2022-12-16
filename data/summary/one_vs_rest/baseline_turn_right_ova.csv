@@ -1,0 +1,3 @@
+,rule,total_support,agree,disagree,unique_states,agree_percentage,disagree_percentage
+0,dist_to_car_in_front == 0,2735,1257,1478,402,0.4595978062157221,0.5404021937842779
+1,speed == 3 and dist_to_car_in_front == 1 and dir_left_car == 99,4507,665,3842,83,0.14754825826492124,0.8524517417350788

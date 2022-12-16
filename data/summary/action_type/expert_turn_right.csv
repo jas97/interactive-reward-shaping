@@ -1,0 +1,2 @@
+,rule,total_support,agree,disagree,unique_states,agree_percentage,disagree_percentage
+0,dist_to_car_in_front == 0 and car_infront_speed == 2,2275,1772,503,420,0.7789010989010989,0.2210989010989011

@@ -1,0 +1,5 @@
+,rule,total_support,agree,disagree,unique_states,agree_percentage,disagree_percentage
+0,dist_to_car_in_front_lagged_2 == 1 and x_left_car_lagged_2 == 99,282,232,50,254,0.8226950354609929,0.1773049645390071
+1,dir_left_car == 1 and dist_to_car_in_front_lagged_1 == 0,165,144,21,152,0.8727272727272727,0.12727272727272726
+2,x_left_car_lagged_1 == 1 and speed_lagged_2 == 3 and x_left_car_lagged_2 == 1,68,58,10,61,0.8529411764705882,0.14705882352941177
+3,x_left_car == 1 and dist_to_car_in_front_lagged_1 == 1 and y_right_car_lagged_2 == 2,92,80,12,86,0.8695652173913043,0.13043478260869565

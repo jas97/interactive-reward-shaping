@@ -1,0 +1,5 @@
+,rule,total_support,agree,disagree,unique_states,agree_percentage,disagree_percentage
+0,dist_to_car_in_front == 2,8400,5907,2493,616,0.7032142857142857,0.29678571428571426
+1,x_left_car == 1 and x_right_car == 0,2678,2211,467,187,0.8256161314413741,0.17438386855862584
+2,x_left_car == 0 and x_right_car == 0,4822,3884,938,206,0.805474906677727,0.1945250933222729
+3,dist_to_car_in_front == 3 and x_left_car == 0,865,714,151,89,0.8254335260115607,0.1745664739884393

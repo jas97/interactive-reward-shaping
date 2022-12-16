@@ -1,0 +1,3 @@
+,rule,total_support,agree,disagree,unique_states,agree_percentage,disagree_percentage
+0,y_left_car == 0 and x_right_car == 0,3788,771,3017,300,0.20353748680042238,0.7964625131995776
+1,speed == 3 and y_right_car == 99,2049,712,1337,218,0.3474865788189361,0.6525134211810639
