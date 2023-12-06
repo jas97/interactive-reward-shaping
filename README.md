@@ -1,5 +1,8 @@
 # Interactive Reward Shaping  
 
+The code for the paper ``Iterative Reward Shaping using Human Feedback for Correcting Reward Misspecification''.
+
+
 ## Installation  
 
 ```shell
